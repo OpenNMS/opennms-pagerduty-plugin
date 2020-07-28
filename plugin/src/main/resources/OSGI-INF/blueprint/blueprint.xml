@@ -20,14 +20,21 @@
 
     <bean id="pdClientFactory" class="org.opennms.pagerduty.client.impl.DefaultPDClientFactory"/>
 
-    <bean id="queueManager" class="org.opennms.integrations.pagerduty.PagerDutyServiceManager">
+    <bean id="serviceManager" class="org.opennms.integrations.pagerduty.PagerDutyServiceManager">
         <argument ref="blueprintBundleContext"/>
         <argument ref="pdClientFactory"/>
         <argument ref="pluginConfig"/>
     </bean>
-    <service interface="org.osgi.service.cm.ManagedServiceFactory" ref="queueManager">
+    <service interface="org.osgi.service.cm.ManagedServiceFactory" ref="serviceManager">
         <service-properties>
             <entry key="service.pid" value="org.opennms.plugins.pagerduty.services"/>
+        </service-properties>
+    </service>
+
+    <bean id="pagerDutyWebhookHandler" class="org.opennms.integrations.pagerduty.web.PagerDutyWebhookHandlerImpl" />
+    <service interface="org.opennms.integrations.pagerduty.web.PagerDutyWebhookHandler" ref="pagerDutyWebhookHandler">
+        <service-properties>
+            <entry key="application-path" value="/rest" />
         </service-properties>
     </service>
 
