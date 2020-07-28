@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features name="openmms-plugins-pagerduty-features" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
+
+    <feature name="opennms-plugins-pagerduty" description="OpenNMS :: Plugins :: PagerDuty" version="${project.version}">
+        <feature dependency="true">aries-blueprint</feature>
+        <feature dependency="true">shell</feature>
+        <feature version="${opennms.api.version}" dependency="true">opennms-integration-api</feature>
+        <feature version="${okhttp.version}" dependency="true">okhttp</feature>
+        <feature version="${guava.version}" dependency="true">guava</feature>
+        <feature version="${jackson.version}" dependency="true">jackson</feature>
+        <bundle dependency="true">mvn:org.apache.commons/commons-jexl3/${jexl.version}</bundle>
+        <bundle>mvn:org.opennms.plugins/pagerduty-plugin/${project.version}</bundle>
+    </feature>
+
+    <feature name="okhttp" description="okhttp" version="${okhttp.version}">
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.okio/${okio.bundle.version}</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.okhttp/${okhttp.bundle.version}</bundle>
+        <bundle dependency="true">wrap:mvn:com.squareup.okhttp3/logging-interceptor/${okhttp.version}</bundle>
+    </feature>
+
+    <feature name="guava" description="guava" version="${guava.version}">
+        <bundle dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
+        <bundle dependency="true">mvn:com.google.guava/failureaccess/1.0.1</bundle>
+    </feature>
+
+    <feature name="jackson" description="jackson" version="${jackson.version}">
+        <bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
+        <bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
+        <bundle dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+    </feature>
+</features>

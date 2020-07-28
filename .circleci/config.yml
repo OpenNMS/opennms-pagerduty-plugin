@@ -1,0 +1,43 @@
+version: 2.1
+
+executors:
+  build-executor:
+    docker:
+      - image: circleci/openjdk:8u212-jdk-stretch
+        environment:
+          MAVEN_OPTS: -Xmx1g
+
+workflows:
+  build-deploy:
+    jobs:
+      - build
+
+jobs:
+  build:
+    executor: build-executor
+    steps:
+      - checkout
+      - run:
+          name: Compile & install the OIA from source
+          command: |
+            git clone https://github.com/OpenNMS/opennms-integration-api
+            cd opennms-integration-api
+            git checkout -b jw/devjam20 origin/jw/devjam20
+            mvn clean install
+      - run:
+          name: Compile source without tests
+          command: |
+            mvn -DskipITs=true -DskipTests=true clean install
+      - run:
+          name: Run tests
+          command: |
+            mvn -DskipITs=false -DskipTests=false clean install test integration-test
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/junit/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
