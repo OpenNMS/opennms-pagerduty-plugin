@@ -96,12 +96,13 @@ public class PagerDutyWebhookHandlerImpl implements PagerDutyWebhookHandler {
 
                     InMemoryEvent ackEvent = ImmutableInMemoryEvent.newBuilder()
                             .setUei(ACKNOWLEDGE_EVENT_UEI)
+                            .setSource(PagerDutyWebhookHandlerImpl.class.getCanonicalName())
                             .addParameter(ImmutableEventParameter.newInstance("ackType", "alarm"))
                             // FIXME: Derive user from payload
                             .addParameter(ImmutableEventParameter.newInstance("ackUser", "PagerDutyPlugin"))
                             .addParameter(ImmutableEventParameter.newInstance("refId", Integer.toString(matchingAlarm.get().getId())))
                             .build();
-                    LOG.debug("Sending ack event: {}", ackEvent);
+                    LOG.info("Sending ack event: {}", ackEvent);
                     eventForwarder.sendAsync(ackEvent);
                 }
             }
