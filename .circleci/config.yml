@@ -18,13 +18,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Compile & install the OIA from source
-          command: |
-            git clone https://github.com/OpenNMS/opennms-integration-api
-            cd opennms-integration-api
-            git checkout -b jw/devjam20 origin/jw/devjam20
-            mvn clean install
-      - run:
           name: Compile source without tests
           command: |
             mvn -DskipITs=true -DskipTests=true clean install
