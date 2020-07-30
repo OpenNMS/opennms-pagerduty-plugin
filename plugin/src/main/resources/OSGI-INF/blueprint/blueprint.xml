@@ -14,7 +14,7 @@
     </cm:property-placeholder>
 
     <reference id="alarmDao" interface="org.opennms.integration.api.v1.dao.AlarmDao" availability="optional"/>
-    <reference id="eventForwarder" interface=" org.opennms.integration.api.v1.events.EventForwarder" availability="optional"/>
+    <reference id="eventForwarder" interface="org.opennms.integration.api.v1.events.EventForwarder" availability="optional"/>
 
     <bean id="pluginConfig" class="org.opennms.integrations.pagerduty.PagerDutyPluginConfig">
         <argument value="${client}" />
