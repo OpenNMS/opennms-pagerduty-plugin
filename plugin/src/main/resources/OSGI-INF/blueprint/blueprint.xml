@@ -13,6 +13,9 @@
         </cm:default-properties>
     </cm:property-placeholder>
 
+    <reference id="alarmDao" interface="org.opennms.integration.api.v1.dao.AlarmDao" availability="optional"/>
+    <reference id="eventForwarder" interface=" org.opennms.integration.api.v1.events.EventForwarder" availability="optional"/>
+
     <bean id="pluginConfig" class="org.opennms.integrations.pagerduty.PagerDutyPluginConfig">
         <argument value="${client}" />
         <argument value="${alarmDetailsUrlPattern}" />
@@ -31,7 +34,10 @@
         </service-properties>
     </service>
 
-    <bean id="pagerDutyWebhookHandler" class="org.opennms.integrations.pagerduty.web.PagerDutyWebhookHandlerImpl" />
+    <bean id="pagerDutyWebhookHandler" class="org.opennms.integrations.pagerduty.web.PagerDutyWebhookHandlerImpl">
+        <argument ref="alarmDao"/>
+        <argument ref="eventForwarder"/>
+    </bean>
     <service interface="org.opennms.integrations.pagerduty.web.PagerDutyWebhookHandler" ref="pagerDutyWebhookHandler">
         <service-properties>
             <entry key="application-path" value="/rest" />
