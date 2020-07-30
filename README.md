@@ -1,5 +1,8 @@
 # OpenNMS PagerDuty Plugin [![CircleCI](https://circleci.com/gh/OpenNMS/opennms-pagerduty-plugin.svg?style=svg)](https://circleci.com/gh/OpenNMS/opennms-pagerduty-plugin)
 
+
+![arch](assets/pd-alerts.png "PagerDuty Integration")
+
 ## Overview
 
 This plugin allows you to create PagerDuty incidents that correspond to alarms in OpenNMS by integrating with the [Events API v2](https://developer.pagerduty.com/docs/events-api-v2/overview/).
