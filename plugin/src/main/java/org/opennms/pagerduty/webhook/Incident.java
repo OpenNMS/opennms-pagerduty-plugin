@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * TODO: The object properties are incomplete - see https://developer.pagerduty.com/docs/webhooks/v2-overview/
  */
-@JsonIgnoreProperties(ignoreUnknown = true) // FIXME: Remove me once complete
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.NONE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Incident {
