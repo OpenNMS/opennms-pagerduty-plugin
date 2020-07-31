@@ -52,6 +52,8 @@ config:update
 
 > Use the value of the "Integration Key" in the service integrations as the `routingKey`
 
+The plugin supports handling multiple services simulatenously - use a different `alias` for each of these when configuring.
+
 ### Alarm filtering
 
 We currently only support JEXL expressions for controlling which alarms get forwarded to a given service.
