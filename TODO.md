@@ -1,3 +1,5 @@
+* Resiliency
+   * Add retry handling & make a better effort of delivering events if sending fails
 * Improved filtering
    * Make it easier for users to configure what alarms get forwarded
 * Customizable mapping
