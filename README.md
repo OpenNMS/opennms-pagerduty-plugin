@@ -13,8 +13,6 @@ OpenNMS alarms map naturally to incidents in PagerDuty:
 * Incidents can be acknowledged while someone is working on the problem
 * Incidents are cleared when there is no longer a problem
 
-The integration operates only in one direction currently (changes to alarms are pushed to PagerDuty), however future work could be done to achieve bi-directional communication by leveraing web hooks.
-
 This plugin is compatible with OpenNMS Horizon 26.1.3 or higher.
 
 ## Usage
