@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.opennms.integration.api.v1.alarms.AlarmLifecycleListener;
+import org.opennms.integration.api.v1.events.EventForwarder;
 import org.opennms.pagerduty.client.api.PDClientFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -58,6 +59,7 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
     public static final String JEXL_FILTER_PROP = "jexlFilter";
 
     private final BundleContext bundleContext;
+    private final EventForwarder eventForwarder;
     private final PDClientFactory pdClientFactory;
     private final PagerDutyPluginConfig pluginConfig;
 
@@ -68,8 +70,10 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
 
     private Map<String, Entity> entities = new LinkedHashMap<>();
 
-    public PagerDutyServiceManager(BundleContext bundleContext, PDClientFactory pdClientFactory, PagerDutyPluginConfig pluginConfig) {
+    public PagerDutyServiceManager(BundleContext bundleContext, EventForwarder eventForwarder,
+                                   PDClientFactory pdClientFactory, PagerDutyPluginConfig pluginConfig) {
         this.bundleContext = Objects.requireNonNull(bundleContext);
+        this.eventForwarder = Objects.requireNonNull(eventForwarder);
         this.pdClientFactory = Objects.requireNonNull(pdClientFactory);
         this.pluginConfig = Objects.requireNonNull(pluginConfig);
     }
@@ -97,7 +101,7 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
 
         // Now build the entity
         Entity entity = new Entity();
-        entity.plugin = new PagerDutyForwarder(pdClientFactory, pluginConfig, serviceConfig);
+        entity.plugin = new PagerDutyForwarder(eventForwarder, pdClientFactory, pluginConfig, serviceConfig);
         // Register the service
         entity.alarmLifecycleListener = bundleContext.registerService(AlarmLifecycleListener.class, entity.plugin, null);
         LOG.info("Successfully started plugin for pid: {}", pid);

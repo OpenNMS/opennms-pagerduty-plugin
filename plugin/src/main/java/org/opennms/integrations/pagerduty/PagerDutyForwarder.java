@@ -44,10 +44,14 @@ import org.apache.commons.jexl3.JexlEngine;
 import org.apache.commons.jexl3.JexlExpression;
 import org.apache.commons.jexl3.MapContext;
 import org.opennms.integration.api.v1.alarms.AlarmLifecycleListener;
+import org.opennms.integration.api.v1.events.EventForwarder;
 import org.opennms.integration.api.v1.model.Alarm;
 import org.opennms.integration.api.v1.model.DatabaseEvent;
 import org.opennms.integration.api.v1.model.EventParameter;
+import org.opennms.integration.api.v1.model.InMemoryEvent;
 import org.opennms.integration.api.v1.model.Severity;
+import org.opennms.integration.api.v1.model.immutables.ImmutableEventParameter;
+import org.opennms.integration.api.v1.model.immutables.ImmutableInMemoryEvent;
 import org.opennms.pagerduty.client.api.PDClient;
 import org.opennms.pagerduty.client.api.PDClientFactory;
 import org.opennms.pagerduty.client.api.PDEvent;
@@ -62,6 +66,11 @@ import com.google.common.base.Strings;
 public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(PagerDutyForwarder.class);
 
+    private static final String PD_UEI_PREFIX = "uei.opennms.org/pagerduty";
+    private static final String SEND_EVENT_FAILED_UEI = PD_UEI_PREFIX + "/sendEventFailed";
+    private static final String SEND_EVENT_SUCCESSFUL_UEI = PD_UEI_PREFIX + "/sendEventSuccessful";
+
+    private EventForwarder eventForwarder;
     private final PDClient pdClient;
     private final PagerDutyPluginConfig pluginConfig;
     private final PagerDutyServiceConfig serviceConfig;
@@ -72,7 +81,8 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
      */
     private final Set<Integer> alarmIdsFiltered = new ConcurrentSkipListSet<>();
 
-    public PagerDutyForwarder(PDClientFactory pdClientFactory, PagerDutyPluginConfig pluginConfig, PagerDutyServiceConfig serviceConfig) {
+    public PagerDutyForwarder(EventForwarder eventForwarder, PDClientFactory pdClientFactory, PagerDutyPluginConfig pluginConfig, PagerDutyServiceConfig serviceConfig) {
+        this.eventForwarder = Objects.requireNonNull(eventForwarder);
         this.pluginConfig = Objects.requireNonNull(pluginConfig);
         this.serviceConfig = Objects.requireNonNull(serviceConfig);
         pdClient = pdClientFactory.getClient();
@@ -86,6 +96,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     }
 
     private boolean shouldProcess(Alarm alarm) {
+        if (alarm.getReductionKey().startsWith(PD_UEI_PREFIX)) {
+            // Never forward alarms that the plugin itself creates
+            return false;
+        }
         if (jexlFilterExpression == null) {
             return true;
         }
@@ -107,9 +121,36 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         LOG.info("Sending event for alarm with reduction-key: {}", alarm.getReductionKey());
         pdClient.sendEvent(pdEvent).whenComplete((v,ex) -> {
            if (ex != null) {
-               eventForward
+               eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
+                       .setUei(SEND_EVENT_FAILED_UEI)
+                       // TODO: The API should make this be less verbose i.e.
+                       // .addParameter("reductionKey", alarm.getReductionKey())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("reductionKey")
+                               .setValue(alarm.getReductionKey())
+                               .build())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("message")
+                               .setValue(ex.getMessage())
+                               .build())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("routingKey")
+                               .setValue(serviceConfig.getRoutingKey())
+                               .build())
+                       .build());
                LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
            } else {
+               eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
+                       .setUei(SEND_EVENT_SUCCESSFUL_UEI)
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("reductionKey")
+                               .setValue(alarm.getReductionKey())
+                               .build())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("routingKey")
+                               .setValue(serviceConfig.getRoutingKey())
+                               .build())
+                       .build());
                LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
            }
         });
@@ -137,8 +178,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
     @Override
     public void handleAlarmSnapshot(List<Alarm> alarms) {
-        // TODO: Add snapshot handling support
-        // We should add some persistent state handling before we do this though
+        // TODO: Add snapshot handling support - we should add some persistent state handling before we do this though
     }
 
     public PDEvent toEvent(Alarm alarm) {

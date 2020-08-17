@@ -25,6 +25,7 @@
 
     <bean id="serviceManager" class="org.opennms.integrations.pagerduty.PagerDutyServiceManager">
         <argument ref="blueprintBundleContext"/>
+        <argument ref="eventForwarder"/>
         <argument ref="pdClientFactory"/>
         <argument ref="pluginConfig"/>
     </bean>
@@ -42,6 +43,10 @@
         <service-properties>
             <entry key="application-path" value="/rest" />
         </service-properties>
+    </service>
+
+    <service interface="org.opennms.integration.api.v1.config.events.EventConfExtension">
+        <bean class="org.opennms.integrations.pagerduty.PluginEventConfExtension"/>
     </service>
 
 </blueprint>

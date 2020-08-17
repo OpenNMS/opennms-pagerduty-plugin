@@ -2,6 +2,7 @@
    * Add retry handling & make a better effort of delivering events if sending fails
 * Improved filtering
    * Make it easier for users to configure what alarms get forwarded
+   * Add example for filtering on last event parm.
 * Customizable mapping
    * Allow users to configure how alarms are mapped to incidents
 * Complete webhook handling for bi-directional support

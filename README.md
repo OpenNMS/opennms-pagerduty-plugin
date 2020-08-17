@@ -52,7 +52,7 @@ config:update
 
 > Use the value of the "Integration Key" in the service integrations as the `routingKey`
 
-The plugin supports handling multiple services simulatenously - use a different `alias` for each of these when configuring.
+The plugin supports handling multiple services simultaneously - use a different `alias` for each of these when configuring.
 
 ### Alarm filtering
 
@@ -65,6 +65,11 @@ No alarms matched (out of 1 alarms.)
 admin@opennms> opennms-pagerduty:eval-jexl 'alarm.reductionKey =~ ".*"'
 MATCHED: ImmutableAlarm{reductionKey='uei.opennms.org/devjam/2020/minecraft/playerEnteredZone:mousebar:x_intercept', id=109, node=null, managedObjectInstance='null', managedObjectType='zone', type=null, severity=WARNING, attributes={}, relatedAlarms=[], logMessage='x_intercept has entered mousebar.', description='x_intercept has entered mousebar.', lastEventTime=2020-07-30 16:31:26.904, firstEventTime=2020-07-30 16:31:26.904, lastEvent=ImmutableDatabaseEvent{uei='uei.opennms.org/devjam/2020/minecraft/playerEnteredZone', id=195, parameters=[ImmutableEventParameter{name='zone', value='mousebar'}, ImmutableEventParameter{name='player', value='x_intercept'}]}, acknowledged=false}
 ```
+
+### Handling notification failures
+
+In the case where forwarding an alarm to PagerDuty fails, the plugin will generate a `uei.opennms.org/pagerduty/sendEventFailed` locally that will trigger an alarm.
+The event contains details on the error that occurred and could be used trigger alternate notification mechanisms.
 
 ## Developing
 
@@ -85,4 +90,3 @@ Update automatically:
 ```
 bundle:watch *
 ```
-

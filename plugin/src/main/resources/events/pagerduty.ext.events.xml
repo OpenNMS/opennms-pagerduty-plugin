@@ -1,0 +1,19 @@
+<events xmlns="http://xmlns.opennms.org/xsd/eventconf">
+    <event>
+        <uei>uei.opennms.org/pagerduty/sendEventSuccessful</uei>
+        <event-label>PagerDuty: Successfully sent event</event-label>
+        <descr>Successfully sent event via REST API for alarm with reduction key: %parm[reductionKey]%</descr>
+        <logmsg dest="logndisplay">PD: Successfully sent event for alarm: %parm[reductionKey]%</logmsg>
+        <severity>Normal</severity>
+        <alarm-data reduction-key="%uei%:%parm[routingKey]%:%parm[reductionKey]%" alarm-type="2"
+                    clear-key="uei.opennms.org/pagerduty/sendEventFailed:%parm[routingKey]%:%parm[reductionKey]%"/>
+    </event>
+    <event>
+        <uei>uei.opennms.org/pagerduty/sendEventFailed</uei>
+        <event-label>PagerDuty: Failed to forward event to PagerDuty</event-label>
+        <descr>Failed to sent event via REST API for alarm with reduction key: %parm[reductionKey]%. Message is: %parm[message]%</descr>
+        <logmsg dest="logndisplay">PD: Failed to sent event for alarm: %parm[reductionKey]%</logmsg>
+        <severity>Critical</severity>
+        <alarm-data reduction-key="%uei%:%parm[routingKey]%:%parm[reductionKey]%" alarm-type="1" />
+    </event>
+</events>

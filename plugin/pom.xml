@@ -128,5 +128,9 @@
             <version>1.5.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.opennms.integration.api</groupId>
+            <artifactId>config</artifactId>
+        </dependency>
     </dependencies>
 </project>
