@@ -31,9 +31,12 @@ package org.opennms.integrations.pagerduty;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
@@ -62,9 +65,12 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private final PDClient pdClient;
     private final PagerDutyPluginConfig pluginConfig;
     private final PagerDutyServiceConfig serviceConfig;
-
-    private final JexlEngine jexl = new JexlBuilder().create();
     private final JexlExpression jexlFilterExpression;
+
+    /**
+     * Used to track alarms that were filtered and not forwarded to PD.
+     */
+    private final Set<Integer> alarmIdsFiltered = new ConcurrentSkipListSet<>();
 
     public PagerDutyForwarder(PDClientFactory pdClientFactory, PagerDutyPluginConfig pluginConfig, PagerDutyServiceConfig serviceConfig) {
         this.pluginConfig = Objects.requireNonNull(pluginConfig);
@@ -72,6 +78,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         pdClient = pdClientFactory.getClient();
 
         if (serviceConfig.getJexlFilter() != null) {
+            JexlEngine jexl = new JexlBuilder().create();
             jexlFilterExpression = jexl.createExpression(serviceConfig.getJexlFilter());
         } else {
             jexlFilterExpression = null;
@@ -88,13 +95,19 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     @Override
     public void handleNewOrUpdatedAlarm(Alarm alarm) {
         if (!shouldProcess(alarm)) {
+            // Remember the alarms that were filtered & not processed, so that we can skip
+            // the deletes as well when we get callbacks for these
+            alarmIdsFiltered.add(alarm.getId());
             return;
         }
+        // We may of previously filtered the alarm, but decided to process it now
+        alarmIdsFiltered.remove(alarm.getId());
 
         PDEvent pdEvent = toEvent(alarm);
         LOG.info("Sending event for alarm with reduction-key: {}", alarm.getReductionKey());
         pdClient.sendEvent(pdEvent).whenComplete((v,ex) -> {
            if (ex != null) {
+               eventForward
                LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
            } else {
                LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
@@ -104,7 +117,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
     @Override
     public void handleDeletedAlarm(int alarmId, String reductionKey) {
-        // We don't have enough information here to apply the filter expression, so we just forward all deletes
+        if (alarmIdsFiltered.remove(alarmId)) {
+            // This alarm was filtered out and not forwarded to PD, do not forward the delete
+            return;
+        }
         final PDEvent e = new PDEvent();
         e.setEventAction(PDEventAction.RESOLVE);
         e.setDedupKey(reductionKey);
@@ -184,7 +200,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     }
 
     public static boolean testAlarmAgainstExpression(JexlExpression expression, Alarm alarm) {
-        JexlContext jc = new MapContext();
+        final JexlContext jc = new MapContext();
         jc.set("alarm", alarm);
         return (boolean)expression.evaluate(jc);
     }
