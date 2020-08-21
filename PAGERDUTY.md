@@ -1,13 +1,16 @@
 # PagerDuty + OpenNMS Integration Benefits
 
-* Notify on-call responsders based on alarms triggered in OpenNMS
+OpenNMS is a scalable and highly configurable network management platform with comprehensive fault, performance, and traffic monitoring. 
+Integrate OpenNMS with PagerDuty to
+
+* Notify on-call responders based on alarms triggered in OpenNMS
 * Customize which alarms are forwarded to PagerDuty using flexible expressions
-* Incidents and acknowledgemenet are synchronized accross both OpenNMS and PagerDuty as they update
+* Synchronize incidents and acknowledgemenet across both OpenNMS and PagerDuty as they update
 
 # How it Works
 
 PagerDuty integration for OpenNMS is available as an [OpenNMS Integration API](https://github.com/OpenNMS/opennms-integration-api) plugin.
-When loaded the plugin listens for changes to alarms and forwards these to PagerDuty using the [Events API v2](https://developer.pagerduty.com/docs/events-api-v2/overview/).
+When loaded, the plugin listens for changes to alarms and forwards these to PagerDuty using the [Events API v2](https://developer.pagerduty.com/docs/events-api-v2/overview/).
 The plugin also supports handling webhooks issued by changes to the alerts in PagerDuty, which can be used for bi-direction synchronization.
 
 # Requirements
@@ -33,12 +36,12 @@ If you need help with this integration, please use the [OpenNMS Discourse Group]
 
 ## In OpenNMS
 
-Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
+Download the plugin's .kar file into your OpenNMS deploy directory i.e.,:
 ```
 sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.0/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
 
-Configure the plugin to be install when OpenNMS starts:
+Configure the plugin to be installed when OpenNMS starts:
 ```
 echo 'opennms-plugins-pagerduty wait-for-kar=opennms-pagerduty-plugin' | sudo tee /opt/opennms/etc/featuresBoot.d/pagerduty.boot
 ```
