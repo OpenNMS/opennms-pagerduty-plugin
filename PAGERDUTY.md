@@ -1,13 +1,16 @@
 # PagerDuty + OpenNMS Integration Benefits
 
-* Notify on-call responsders based on alarms triggered in OpenNMS
+OpenNMS is a scalable and highly configurable network management platform with comprehensive fault, performance, and traffic monitoring. 
+Integrate OpenNMS with PagerDuty to
+
+* Notify on-call responders based on alarms triggered in OpenNMS
 * Customize which alarms are forwarded to PagerDuty using flexible expressions
-* Incidents and acknowledgemenet are synchronized accross both OpenNMS and PagerDuty as they update
+* Synchronize incidents and acknowledgemenet across both OpenNMS and PagerDuty as they update
 
 # How it Works
 
 PagerDuty integration for OpenNMS is available as an [OpenNMS Integration API](https://github.com/OpenNMS/opennms-integration-api) plugin.
-When loaded the plugin listens for changes to alarms and forwards these to PagerDuty using the [Events API v2](https://developer.pagerduty.com/docs/events-api-v2/overview/).
+When loaded, the plugin listens for changes to alarms and forwards these to PagerDuty using the [Events API v2](https://developer.pagerduty.com/docs/events-api-v2/overview/).
 The plugin also supports handling webhooks issued by changes to the alerts in PagerDuty, which can be used for bi-direction synchronization.
 
 # Requirements
@@ -25,20 +28,20 @@ If you need help with this integration, please use the [OpenNMS Discourse Group]
 1. From the **Configuration** menu, select **Services**.
 2. There are two ways to add an integration to a service:
    * **If you are adding your integration to an existing service**: Click the **name** of the service you want to add the integration to. Then, select the **Integrations** tab and click the **New Integration** button.
-   * **If you are creating a new service for your integration**: Please read our documentation in section [Configuring Services and Integrations](https://support.pagerduty.com/docs/services-and-integrations#section-configuring-services-and-integrations) and follow the steps outlined in the [Create a New Service](https://support.pagerduty.com/docs/services-and-integrations#section-create-a-new-service) section, selecting **OpenNMS*** as the **Integration Type** in step 4. Continue with the In  **OpenNMS**  section (below) once you have finished these steps.
-3. Enter an **Integration Name** in the format `monitoring-tool-service-name` (e.g.  OpenNMS-Core-Routers) and select **OpenNMS**  from the Integration Type menu.
+   * **If you are creating a new service for your integration**: Please read our documentation in section [Configuring Services and Integrations](https://support.pagerduty.com/docs/services-and-integrations#section-configuring-services-and-integrations) and follow the steps outlined in the [Create a New Service](https://support.pagerduty.com/docs/services-and-integrations#section-create-a-new-service) section, selecting **OpenNMS*** as the **Integration Type** in step 4. Continue with the **In OpenNMS**  section (below) once you have finished these steps.
+3. Enter an **Integration Name** in the format `monitoring-tool-service-name` (e.g.,  OpenNMS-Core-Routers) and select **OpenNMS**  from the Integration Type menu.
 4. Click the **Add Integration** button to save your new integration. You will be redirected to the Integrations tab for your service.
 5. An **Integration Key** will be generated on this screen. Keep this key saved in a safe place, as it will be used when you configure the integration with **OpenNMS**  in the next section.
 ![](https://pdpartner.s3.amazonaws.com/ig-template-copy-integration-key.png)
 
 ## In OpenNMS
 
-Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
+Download the plugin's .kar file into your OpenNMS deploy directory i.e.,:
 ```
 sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.0/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
 
-Configure the plugin to be install when OpenNMS starts:
+Configure the plugin to be installed when OpenNMS starts:
 ```
 echo 'opennms-plugins-pagerduty wait-for-kar=opennms-pagerduty-plugin' | sudo tee /opt/opennms/etc/featuresBoot.d/pagerduty.boot
 ```
