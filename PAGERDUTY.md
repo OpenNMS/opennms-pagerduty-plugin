@@ -35,7 +35,7 @@ If you need help with this integration, please use the [OpenNMS Discourse Group]
 
 Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
 ```
-sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.0/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
+sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.1/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
 
 Configure the plugin to be install when OpenNMS starts:
