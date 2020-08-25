@@ -32,7 +32,7 @@ If you need help with this integration, please use the [OpenNMS Discourse Group]
 3. Enter an **Integration Name** in the format `monitoring-tool-service-name` (e.g.,  OpenNMS-Core-Routers) and select **OpenNMS**  from the Integration Type menu.
 4. Click the **Add Integration** button to save your new integration. You will be redirected to the Integrations tab for your service.
 5. An **Integration Key** will be generated on this screen. Keep this key saved in a safe place, as it will be used when you configure the integration with **OpenNMS**  in the next section.
-![](https://pdpartner.s3.amazonaws.com/ig-template-copy-integration-key.png)
+![](assets/pd-service.png)
 
 ## In OpenNMS
 
