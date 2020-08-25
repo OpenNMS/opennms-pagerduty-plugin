@@ -22,7 +22,7 @@ Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
 sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.1/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
 
-Configure the plugin to be install when OpenNMS starts:
+Configure the plugin to be installed when OpenNMS starts:
 ```
 echo 'opennms-plugins-pagerduty wait-for-kar=opennms-pagerduty-plugin' | sudo tee /opt/opennms/etc/featuresBoot.d/pagerduty.boot
 ```
@@ -36,19 +36,19 @@ Configure global options (affects all services for this instance):
 ```
 config:edit org.opennms.plugins.pagerduty
 property-set client OpenNMS
-property-set alarmDetailsUrlPattern 'http://127.0.0.1:8980/opennms/alarm/detail.htm?id=%d'
+property-set alarmDetailsUrlPattern 'http://"YOUR-OPENNMS-IP-ADDRESS"/opennms/alarm/detail.htm?id=%d'
 config:update
 ```
+> Use the IP address of your OpenNMS server (e.g., 127.0.0.1:8980).
 
 Configure services:
 ```
 config:edit --alias core --factory org.opennms.plugins.pagerduty.services
-property-set routingKey "YOUR-ROUTING-KEY-HERE"
-property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'
+property-set routingKey "YOUR-INTEGRATION-KEY-HERE"
 config:update
 ```
 
-> Use the value of the "Integration Key" in the service integrations as the `routingKey`
+> Use the value of the "Integration Key" as the `routingKey` in the service integrations. By default, you will receive notifications for all alarms. Use a JEXL expression to filter the types of notifcations you receive. For example,`property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'` will forward only alarms with the label "trigger" to PagerDuty.    
 
 The plugin supports handling multiple services simultaneously - use a different `alias` for each of these when configuring.
 
@@ -66,8 +66,8 @@ MATCHED: ImmutableAlarm{reductionKey='uei.opennms.org/devjam/2020/minecraft/play
 
 ### Handling notification failures
 
-In the case where forwarding an alarm to PagerDuty fails, the plugin will generate a `uei.opennms.org/pagerduty/sendEventFailed` locally that will trigger an alarm.
-The event contains details on the error that occurred and could be used trigger alternate notification mechanisms.
+In cases where forwarding an alarm to PagerDuty fails, the plugin will generate a `uei.opennms.org/pagerduty/sendEventFailed` locally that will trigger an alarm.
+The event contains details on the error that occurred. You could use it to trigger alternate notification mechanisms.
 
 ## Developing
 
