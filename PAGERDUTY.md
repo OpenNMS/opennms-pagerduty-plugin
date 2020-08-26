@@ -5,7 +5,7 @@ Integrate OpenNMS with PagerDuty to
 
 * Notify on-call responders based on alarms triggered in OpenNMS
 * Customize which alarms are forwarded to PagerDuty using flexible expressions
-* Synchronize incidents and acknowledgemenet across both OpenNMS and PagerDuty as they update
+* Synchronize incidents and acknowledgement across both OpenNMS and PagerDuty as they update
 
 # How it Works
 
