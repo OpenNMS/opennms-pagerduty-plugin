@@ -55,10 +55,10 @@ Configure global options (affects all services for this instance):
 ```
 config:edit org.opennms.plugins.pagerduty
 property-set client OpenNMS
-property-set alarmDetailsUrlPattern 'http://"YOUR-OPENNMS-IP-ADDRESS"/opennms/alarm/detail.htm?id=%d'
+property-set alarmDetailsUrlPattern 'http://YOUR-OPENNMS-HOST:8980/opennms/alarm/detail.htm?id=%d'
 config:update
 ```
-> Use the IP address of your OpenNMS server (e.g., 127.0.0.1:8980).
+> Use the IP address or hostname of your OpenNMS server (e.g., 127.0.0.1).
 
 Configure services:
 ```
