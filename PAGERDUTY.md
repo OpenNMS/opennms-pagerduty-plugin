@@ -27,17 +27,16 @@ If you need help with this integration, please use the [OpenNMS Discourse Group]
 ### Integrating With a PagerDuty Service
 1. From the **Configuration** menu, select **Services**.
 2. There are two ways to add an integration to a service:
-   * **If you are adding your integration to an existing service**: Click the **name** of the service you want to add the integration to. Then, select the **Integrations** tab and click **Add a new integration to this service**.
-   * **If you are creating a new service for your integration**: Please read our documentation in section [Configuring Services and Integrations](https://support.pagerduty.com/docs/services-and-integrations#section-configuring-services-and-integrations) and follow the steps outlined in the [Create a New Service](https://support.pagerduty.com/docs/services-and-integrations#section-create-a-new-service) section, selecting **OpenNMS*** as the **Integration Type** in step 4. Continue with the **In OpenNMS** section (below) once you have finished these steps.
-3. Enter an **Integration Name** in the format `monitoring-tool-service-name` (e.g.,  OpenNMS-Core-Routers) and select **OpenNMS** from the Integration Type drop-down.
-4. If desired, change the email address from which you wnt the monitoring tool to send email. 
-5. Click **Add Integration** to save your new integration. You will be redirected to the Integrations tab for your service.
-6. An **Integration Key** will be generated on this screen. Save this in a secure place, as you will need it when you configure the integration with **OpenNMS**  in the next section.
+   * **If you are adding your integration to an existing service**: Click the name of the service you want to add the integration to (e.g., OpenNMSPlugin). Then, select the **Integrations** tab and click **Add a new integration**.
+   * **If you are creating a new service for your integration**: Please read our documentation in section [Configuring Services and Integrations](https://support.pagerduty.com/docs/services-and-integrations#section-configuring-services-and-integrations) and follow the steps outlined in the [Create a New Service](https://support.pagerduty.com/docs/services-and-integrations#section-create-a-new-service) section, selecting **Use our API directly>Events API v2** in the **Integration Type** area in step 4. Continue with the **In OpenNMS** section (below) once you have finished these steps.
+3. Enter an **Integration Name** in the format `monitoring-tool-service-name` (e.g.,  OpenNMS-Core-Routers) and in the **Integration Type** area, select **Use our API directly>Events API v2**.
+4. Click the **Add Integration** button to save your new integration. You will be redirected to the Integrations tab for your service.
+5. The screen displays an integration key. Save this key in a safe place. You will use it to configure the integration with OpenNMS in the next section.
 ![](assets/pd-service.png)
 
 ## In OpenNMS
 
-Download the plugin's .kar file into your OpenNMS deploy directory i.e.,:
+Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
 ```
 sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.1/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
@@ -56,21 +55,25 @@ Configure global options (affects all services for this instance):
 ```
 config:edit org.opennms.plugins.pagerduty
 property-set client OpenNMS
-property-set alarmDetailsUrlPattern 'http://127.0.0.1:8980/opennms/alarm/detail.htm?id=%d'
+property-set alarmDetailsUrlPattern 'http://"YOUR-OPENNMS-IP-ADDRESS"/opennms/alarm/detail.htm?id=%d'
 config:update
 ```
+> Use the IP address of your OpenNMS server (e.g., 127.0.0.1:8980).
 
 Configure services:
 ```
 config:edit --alias core --factory org.opennms.plugins.pagerduty.services
-property-set routingKey "YOUR-INTEGRATION-KEY-HERE"
-property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'
+property-set routingKey "YOUR-INTEGRATION-KEY"
 config:update
 ```
 
-> Use the value of the "Integration Key" in the service integrations as the `routingKey`
+> Use the value of the "Integration Key" as the `routingKey` in the service integrations. 
 
-See [OpenNMS PagerDuty Plugin](https://github.com/OpenNMS/opennms-pagerduty-plugin) for more details on customizing the integration.
+NOTE: By default, you will receive notifications for all alarms. 
+You can use a JEXL expression to filter the types of notifcations you receive.
+For example, `property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'` will forward only alarms with the label "trigger" to PagerDuty.  
+
+See [OpenNMS PagerDuty Plugin](https://github.com/OpenNMS/opennms-pagerduty-plugin) for more details on customizing the integration, including creating filter expressiions. 
 
 # How to Uninstall
 
