@@ -86,6 +86,14 @@ admin@opennms> property-set jexlFilter '"Servers" =~ alarm.node.categories and "
 
 This leveages the `!~` operator to mean "the alarm reduction key does not match the given regex", in addition to the "in" sense of `=~` as shown above.
 
+#### Only Alarms That Can Auto-Resolve
+
+```
+admin@opennms> property-set jexlFilter '"Servers" =~ alarm.node.categories and "Test" =~ alarm.node.categories and alarm.type.name == "PROBLEM"'
+```
+
+This limits to only alarms for certain categories of nodes that have a resolution. Some alarms have no "clearing" event, so they would stay present in PagerDuty forever unless manual action is taken, or certain special configuration is used within PagerDuty to expire the events.
+
 ### Handling notification failures
 
 In cases where forwarding an alarm to PagerDuty fails, the plugin will generate a `uei.opennms.org/pagerduty/sendEventFailed` locally that will trigger an alarm.
