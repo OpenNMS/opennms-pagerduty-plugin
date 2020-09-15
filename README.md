@@ -118,3 +118,15 @@ Update automatically:
 ```
 bundle:watch *
 ```
+
+### Debugging
+
+Add the following lines to `$OPENNMS_HOME/etc/org.ops4j.pax.logging.cfg`:
+```
+# PagerDuty plugin
+log4j2.logger.pd-plugin.name = org.opennms.integrations.pagerduty
+log4j2.logger.pd-plugin.level = DEBUG
+log4j2.logger.pd-client.name = org.opennms.pagerduty
+log4j2.logger.pd-client.level = DEBUG
+```
+

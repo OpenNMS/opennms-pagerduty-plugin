@@ -87,7 +87,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         this.serviceConfig = Objects.requireNonNull(serviceConfig);
         pdClient = pdClientFactory.getClient();
 
-        if (serviceConfig.getJexlFilter() != null) {
+        if (!Strings.isNullOrEmpty(serviceConfig.getJexlFilter())) {
             JexlEngine jexl = new JexlBuilder().create();
             jexlFilterExpression = jexl.createExpression(serviceConfig.getJexlFilter());
         } else {
