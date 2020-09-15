@@ -31,12 +31,18 @@ package org.opennms.integrations.pagerduty;
 import java.util.Objects;
 
 public class PagerDutyServiceConfig {
+    private final String pid;
     private final String routingKey;
     private final String jexlFilter;
 
-    public PagerDutyServiceConfig(String routingKey, String jexlFilter) {
+    public PagerDutyServiceConfig(String pid, String routingKey, String jexlFilter) {
+        this.pid = Objects.requireNonNull(pid, "pid is required");
         this.routingKey = Objects.requireNonNull(routingKey, "routingKey is required");
         this.jexlFilter = jexlFilter;
+    }
+
+    public String getPid() {
+        return pid;
     }
 
     public String getRoutingKey() {
@@ -50,21 +56,23 @@ public class PagerDutyServiceConfig {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PagerDutyServiceConfig)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         PagerDutyServiceConfig that = (PagerDutyServiceConfig) o;
-        return Objects.equals(routingKey, that.routingKey) &&
+        return Objects.equals(pid, that.pid) &&
+                Objects.equals(routingKey, that.routingKey) &&
                 Objects.equals(jexlFilter, that.jexlFilter);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(routingKey, jexlFilter);
+        return Objects.hash(pid, routingKey, jexlFilter);
     }
 
     @Override
     public String toString() {
         return "PagerDutyServiceConfig{" +
-                "routingKey='" + routingKey + '\'' +
+                "pid='" + pid + '\'' +
+                ", routingKey='" + routingKey + '\'' +
                 ", jexlFilter='" + jexlFilter + '\'' +
                 '}';
     }

@@ -139,6 +139,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                                .setName("routingKey")
                                .setValue(serviceConfig.getRoutingKey())
                                .build())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("pid")
+                               .setValue(serviceConfig.getPid())
+                               .build())
                        .build());
            } else {
                LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
@@ -152,6 +156,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("routingKey")
                                .setValue(serviceConfig.getRoutingKey())
+                               .build())
+                       .addParameter(ImmutableEventParameter.newBuilder()
+                               .setName("pid")
+                               .setValue(serviceConfig.getPid())
                                .build())
                        .build());
            }

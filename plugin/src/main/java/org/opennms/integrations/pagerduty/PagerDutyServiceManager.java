@@ -97,7 +97,7 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
         // Build the service config
         final String routingKey = props.get(ROUTING_KEY_PROP);
         final String jexlFilter = props.get(JEXL_FILTER_PROP);
-        PagerDutyServiceConfig serviceConfig = new PagerDutyServiceConfig(routingKey, jexlFilter);
+        PagerDutyServiceConfig serviceConfig = new PagerDutyServiceConfig(pid, routingKey, jexlFilter);
 
         // Now build the entity
         Entity entity = new Entity();
