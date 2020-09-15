@@ -121,8 +121,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         LOG.info("Sending event for alarm with reduction-key: {}", alarm.getReductionKey());
         pdClient.sendEvent(pdEvent).whenComplete((v,ex) -> {
            if (ex != null) {
+               LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
                eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
                        .setUei(SEND_EVENT_FAILED_UEI)
+                       .setSource(PagerDutyForwarder.class.getName())
                        // TODO: The API should make this be less verbose i.e.
                        // .addParameter("reductionKey", alarm.getReductionKey())
                        .addParameter(ImmutableEventParameter.newBuilder()
@@ -138,10 +140,11 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                                .setValue(serviceConfig.getRoutingKey())
                                .build())
                        .build());
-               LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
            } else {
+               LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
                eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
                        .setUei(SEND_EVENT_SUCCESSFUL_UEI)
+                       .setSource(PagerDutyForwarder.class.getName())
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("reductionKey")
                                .setValue(alarm.getReductionKey())
@@ -151,7 +154,6 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                                .setValue(serviceConfig.getRoutingKey())
                                .build())
                        .build());
-               LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
            }
         });
     }
