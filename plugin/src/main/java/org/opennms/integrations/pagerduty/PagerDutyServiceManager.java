@@ -104,6 +104,7 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
         entity.plugin = new PagerDutyForwarder(eventForwarder, pdClientFactory, pluginConfig, serviceConfig);
         // Register the service
         entity.alarmLifecycleListener = bundleContext.registerService(AlarmLifecycleListener.class, entity.plugin, null);
+        entities.put(pid, entity);
         LOG.info("Successfully started plugin for pid: {}", pid);
     }
 
