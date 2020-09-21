@@ -28,6 +28,7 @@
 
 package org.opennms.integrations.pagerduty;
 
+import java.time.Duration;
 import java.util.Dictionary;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.osgi.service.cm.ManagedServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 
@@ -57,6 +59,7 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
     
     public static final String ROUTING_KEY_PROP = "routingKey";
     public static final String JEXL_FILTER_PROP = "jexlFilter";
+    public static final String HOLD_DOWN_DELAY_PROP = "holdDownDelay";
 
     private final BundleContext bundleContext;
     private final EventForwarder eventForwarder;
@@ -97,7 +100,12 @@ public class PagerDutyServiceManager implements ManagedServiceFactory {
         // Build the service config
         final String routingKey = props.get(ROUTING_KEY_PROP);
         final String jexlFilter = props.get(JEXL_FILTER_PROP);
-        PagerDutyServiceConfig serviceConfig = new PagerDutyServiceConfig(pid, routingKey, jexlFilter);
+        final String holdDownDelayStr = props.get(HOLD_DOWN_DELAY_PROP);
+        Duration holdDownDelay = null;
+        if (!Strings.isNullOrEmpty(holdDownDelayStr)) {
+            holdDownDelay = Duration.parse(holdDownDelayStr);
+        }
+        PagerDutyServiceConfig serviceConfig = new PagerDutyServiceConfig(pid, routingKey, jexlFilter, holdDownDelay);
 
         // Now build the entity
         Entity entity = new Entity();

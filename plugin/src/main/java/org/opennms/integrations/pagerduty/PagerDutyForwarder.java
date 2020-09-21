@@ -30,13 +30,16 @@ package org.opennms.integrations.pagerduty;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.DelayQueue;
 
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
@@ -48,7 +51,6 @@ import org.opennms.integration.api.v1.events.EventForwarder;
 import org.opennms.integration.api.v1.model.Alarm;
 import org.opennms.integration.api.v1.model.DatabaseEvent;
 import org.opennms.integration.api.v1.model.EventParameter;
-import org.opennms.integration.api.v1.model.InMemoryEvent;
 import org.opennms.integration.api.v1.model.Severity;
 import org.opennms.integration.api.v1.model.immutables.ImmutableEventParameter;
 import org.opennms.integration.api.v1.model.immutables.ImmutableInMemoryEvent;
@@ -75,6 +77,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private final PagerDutyPluginConfig pluginConfig;
     private final PagerDutyServiceConfig serviceConfig;
     private final JexlExpression jexlFilterExpression;
+    private final BlockingQueue<PagerDutyForwarderTask> taskQueue;
 
     /**
      * Used to track alarms that were filtered and not forwarded to PD.
@@ -86,6 +89,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         this.pluginConfig = Objects.requireNonNull(pluginConfig);
         this.serviceConfig = Objects.requireNonNull(serviceConfig);
         pdClient = pdClientFactory.getClient();
+        taskQueue = new DelayQueue<>();
 
         if (!Strings.isNullOrEmpty(serviceConfig.getJexlFilter())) {
             JexlEngine jexl = new JexlBuilder().create();
@@ -118,8 +122,19 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         alarmIdsFiltered.remove(alarm.getId());
 
         PDEvent pdEvent = toEvent(alarm);
+
+        Duration holdDownDelay = serviceConfig.getHoldDownDelay();
+        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}", alarm.getReductionKey());
+        PagerDutyForwarderTask task = new PagerDutyForwarderTask(Instant.now().plus(holdDownDelay), alarm.getReductionKey(), pdEvent);
+        taskQueue.offer(task);
+
+        // FIXME move this call onto a worker thread consuming from taskQueue
+        sendPDEvent(alarm, pdEvent);
+    }
+
+    private void sendPDEvent(Alarm alarm, PDEvent pdEvent) {
         LOG.info("Sending event for alarm with reduction-key: {}", alarm.getReductionKey());
-        pdClient.sendEvent(pdEvent).whenComplete((v,ex) -> {
+        pdClient.sendEvent(pdEvent).whenComplete((v, ex) -> {
            if (ex != null) {
                LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
                eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
@@ -172,6 +187,11 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             // This alarm was filtered out and not forwarded to PD, do not forward the delete
             return;
         }
+        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
+            // This alarm wasn't sent to PD yet, and we've now cancelled that task
+            return;
+        }
+
         final PDEvent e = new PDEvent();
         e.setEventAction(PDEventAction.RESOLVE);
         e.setDedupKey(reductionKey);
