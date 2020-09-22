@@ -28,18 +28,22 @@
 package org.opennms.integrations.pagerduty;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import org.opennms.pagerduty.client.api.PDEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a PagerDuty notification to be sent at some future time, if the underlying alarm has not yet been
  * resolved.
  */
 public class PagerDutyForwarderTask implements Delayed {
+    private static final Logger LOG = LoggerFactory.getLogger(PagerDutyForwarderTask.class);
 
     /**
      * The amount of time to delay before forwarding this event to PagerDuty.
@@ -72,7 +76,10 @@ public class PagerDutyForwarderTask implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        return unit.convert(delay.toMillis(), TimeUnit.MILLISECONDS);
+        long d = unit.convert(delay.toMillis(), TimeUnit.MILLISECONDS);
+        LOG.debug("getDelay(unit={}): {} => {}", unit, delay, d);
+        LOG.debug("Trigger After: {}", Instant.now().plus(delay));
+        return d;
     }
 
     @Override
