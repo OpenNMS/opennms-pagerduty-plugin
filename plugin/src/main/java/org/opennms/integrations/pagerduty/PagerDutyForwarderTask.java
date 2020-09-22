@@ -1,13 +1,13 @@
 package org.opennms.integrations.pagerduty;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import org.opennms.pagerduty.client.api.PDEvent;
+import org.threeten.extra.Temporals;
 
 /**
  * Represents a PagerDuty notification to be sent at some future time, if the underlying alarm has not yet been
@@ -15,6 +15,9 @@ import org.opennms.pagerduty.client.api.PDEvent;
  */
 public class PagerDutyForwarderTask implements Delayed {
 
+    /**
+     * The amount of time to delay before forwarding this event to PagerDuty.
+     */
     private final Duration delay;
 
     /**
@@ -27,7 +30,8 @@ public class PagerDutyForwarderTask implements Delayed {
      */
     private final PDEvent pdEvent;
 
-    public PagerDutyForwarderTask(Instant fireAfter, String reductionKey, PDEvent pdEvent) {
+    public PagerDutyForwarderTask(Duration delay, String reductionKey, PDEvent pdEvent) {
+        this.delay = delay;
         this.reductionKey = reductionKey;
         this.pdEvent = pdEvent;
     }
@@ -42,7 +46,7 @@ public class PagerDutyForwarderTask implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        return delay.
+        return delay.get(Temporals.chronoUnit(unit));
     }
 
     @Override

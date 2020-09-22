@@ -95,6 +95,12 @@
             <artifactId>commons-jexl3</artifactId>
             <version>${jexl.version}</version>
         </dependency>
+        <!-- TODO this doesn't seem to be an OSGi bundle, so I probably have to do something different... -->
+        <dependency>
+            <groupId>org.threeten</groupId>
+            <artifactId>threeten-extra</artifactId>
+            <version>${threeten-extra.version}</version>
+        </dependency>
 
         <!-- Test -->
         <dependency>
