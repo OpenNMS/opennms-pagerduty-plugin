@@ -128,7 +128,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         PDEvent pdEvent = toEvent(alarm);
 
         Duration holdDownDelay = serviceConfig.getHoldDownDelay();
-        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}", alarm.getReductionKey());
+        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", alarm.getReductionKey(), holdDownDelay);
         PagerDutyForwarderTask task = new PagerDutyForwarderTask(holdDownDelay, alarm.getReductionKey(), pdEvent);
         taskQueue.offer(task);
     }
@@ -283,7 +283,9 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         public void run() {
             while (true) {
                 try {
+                    LOG.debug("Waiting for a task to become available...");
                     PagerDutyForwarderTask task = taskQueue.take();
+                    LOG.debug("Received PagerDutyForwarderTask: {}", task);
                     sendPDEvent(task.getReductionKey(), task.getPdEvent());
                 } catch (InterruptedException e) {
                     LOG.info("TaskConsumer interrupted. Stopping.");
