@@ -150,9 +150,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
     private void resolveEvent(PDEvent pdEvent, String reductionKey) {
         LOG.debug("Resolving alarm with reduction-key: {}", reductionKey);
-        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
-            // This alarm wasn't sent to PD yet, and we've now cancelled that task
-            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+        if (dequeueTasks(reductionKey)) {
             return;
         }
         sendPDEvent(reductionKey, pdEvent);
@@ -160,7 +158,19 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
     private void ackEvent(PDEvent pdEvent, String reductionKey) {
         LOG.debug("Acknowledging alarm with reduction-key: {}", reductionKey);
+        if (dequeueTasks(reductionKey)) {
+            return;
+        }
         sendPDEvent(reductionKey, pdEvent);
+    }
+
+    private boolean dequeueTasks(String reductionKey) {
+        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
+            // This alarm wasn't sent to PD yet, and we've now cancelled that task
+            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+            return true;
+        }
+        return false;
     }
 
     private void sendPDEvent(String reductionKey, PDEvent pdEvent) {
@@ -218,9 +228,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             // This alarm was filtered out and not forwarded to PD, do not forward the delete
             return;
         }
-        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
-            // This alarm wasn't sent to PD yet, and we've now cancelled that task
-            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+        if (dequeueTasks(reductionKey)) {
             return;
         }
 
