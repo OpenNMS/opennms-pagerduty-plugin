@@ -144,8 +144,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private void enqueueTask(PDEvent pdEvent, String reductionKey) {
         Duration holdDownDelay = serviceConfig.getHoldDownDelay();
         LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", reductionKey, holdDownDelay);
+        LOG.debug("Current Queue Size: {}", taskQueue.size());
         PagerDutyForwarderTask task = new PagerDutyForwarderTask(holdDownDelay, reductionKey, pdEvent);
         taskQueue.offer(task);
+        LOG.debug("Current Queue Size: {}", taskQueue.size());
     }
 
     private void resolveEvent(PDEvent pdEvent, String reductionKey) {
@@ -165,9 +167,11 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     }
 
     private boolean dequeueTasks(String reductionKey) {
+        LOG.debug("Current Queue Size: {}", taskQueue.size());
         if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
             // This alarm wasn't sent to PD yet, and we've now cancelled that task
             LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+            LOG.debug("Current Queue Size: {}", taskQueue.size());
             return true;
         }
         return false;
@@ -323,11 +327,14 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             while (true) {
                 try {
                     LOG.debug("Waiting for a task to become available...");
+                    LOG.debug("Current Queue Size: {}", taskQueue.size());
                     PagerDutyForwarderTask task = taskQueue.take();
                     LOG.debug("Received PagerDutyForwarderTask: {}", task);
+                    LOG.debug("Current Queue Size: {}", taskQueue.size());
                     sendPDEvent(task.getReductionKey(), task.getPdEvent());
                 } catch (InterruptedException e) {
                     LOG.info("TaskConsumer interrupted. Stopping.");
+                    LOG.debug("Current Queue Size: {}", taskQueue.size());
                     break;
                 }
             }
