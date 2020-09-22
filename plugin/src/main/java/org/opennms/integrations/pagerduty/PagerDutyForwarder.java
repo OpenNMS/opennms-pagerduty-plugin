@@ -286,6 +286,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                     PagerDutyForwarderTask task = taskQueue.take();
                     sendPDEvent(task.getReductionKey(), task.getPdEvent());
                 } catch (InterruptedException e) {
+                    LOG.info("TaskConsumer interrupted. Stopping.");
                     break;
                 }
             }
