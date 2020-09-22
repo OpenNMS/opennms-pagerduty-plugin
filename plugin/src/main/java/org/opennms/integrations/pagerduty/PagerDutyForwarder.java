@@ -31,6 +31,7 @@ package org.opennms.integrations.pagerduty;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +146,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         Duration holdDownDelay = serviceConfig.getHoldDownDelay();
         LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", reductionKey, holdDownDelay);
         LOG.debug("Current Queue Size: {}", taskQueue.size());
-        PagerDutyForwarderTask task = new PagerDutyForwarderTask(holdDownDelay, reductionKey, pdEvent);
+        PagerDutyForwarderTask task = new PagerDutyForwarderTask(Instant.now().plus(holdDownDelay), reductionKey, pdEvent);
         taskQueue.offer(task);
         LOG.debug("Current Queue Size: {}", taskQueue.size());
     }

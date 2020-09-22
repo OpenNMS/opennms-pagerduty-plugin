@@ -46,9 +46,9 @@ public class PagerDutyForwarderTask implements Delayed {
     private static final Logger LOG = LoggerFactory.getLogger(PagerDutyForwarderTask.class);
 
     /**
-     * The amount of time to delay before forwarding this event to PagerDuty.
+     * The time after which this task may fire.
      */
-    private final Duration delay;
+    private final Instant fireAfter;
 
     /**
      * The reductionKey for the underlying alarm.
@@ -60,8 +60,8 @@ public class PagerDutyForwarderTask implements Delayed {
      */
     private final PDEvent pdEvent;
 
-    public PagerDutyForwarderTask(Duration delay, String reductionKey, PDEvent pdEvent) {
-        this.delay = delay;
+    public PagerDutyForwarderTask(Instant fireAfter, String reductionKey, PDEvent pdEvent) {
+        this.fireAfter = fireAfter;
         this.reductionKey = reductionKey;
         this.pdEvent = pdEvent;
     }
@@ -76,16 +76,22 @@ public class PagerDutyForwarderTask implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        long d = unit.convert(delay.toMillis(), TimeUnit.MILLISECONDS);
-        LOG.debug("getDelay(unit={}): {} => {}", unit, delay, d);
-        LOG.debug("Trigger After: {}", Instant.now().plus(delay));
+        Instant now = Instant.now();
+        if (now.isAfter(fireAfter)) {
+            LOG.debug("You may fire when ready!");
+            return 0;
+        }
+        Duration remaining = Duration.between(fireAfter, now);
+        long d = unit.convert(remaining.toNanos(), TimeUnit.NANOSECONDS);
+        LOG.debug("getDelay(unit={}): {} => {}", unit, remaining, d);
+        LOG.debug("Trigger After: {}", fireAfter);
         return d;
     }
 
     @Override
     public int compareTo(Delayed o) {
-        return Objects.compare(getDelay(TimeUnit.SECONDS),
-                o.getDelay(TimeUnit.SECONDS),
+        return Objects.compare(getDelay(TimeUnit.NANOSECONDS),
+                o.getDelay(TimeUnit.NANOSECONDS),
                 Comparator.naturalOrder());
     }
 
@@ -94,23 +100,22 @@ public class PagerDutyForwarderTask implements Delayed {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PagerDutyForwarderTask that = (PagerDutyForwarderTask) o;
-        return Objects.equals(delay, that.delay) &&
+        return Objects.equals(fireAfter, that.fireAfter) &&
                 Objects.equals(reductionKey, that.reductionKey) &&
                 Objects.equals(pdEvent, that.pdEvent);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(delay, reductionKey, pdEvent);
+        return Objects.hash(fireAfter, reductionKey, pdEvent);
     }
 
     @Override
     public String toString() {
         return "PagerDutyForwarderTask{" +
-                "delay=" + delay +
+                "fireAfter=" + fireAfter +
                 ", reductionKey='" + reductionKey + '\'' +
                 ", pdEvent=" + pdEvent +
                 '}';
     }
-
 }
