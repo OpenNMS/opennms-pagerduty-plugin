@@ -268,6 +268,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         } catch (IOException e) {
             LOG.warn("Error while closing PagerDuty client. Resources may not be cleaned up properly.", e);
         }
+        executor.shutdownNow();
     }
 
     public static boolean testAlarmAgainstExpression(JexlExpression expression, Alarm alarm) {
@@ -280,13 +281,12 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
         @Override
         public void run() {
-            while (true) { // TODO figure out the right way to do this loop -- .take() blocks until an element is ready
+            while (true) {
                 try {
                     PagerDutyForwarderTask task = taskQueue.take();
                     sendPDEvent(task.getReductionKey(), task.getPdEvent());
                 } catch (InterruptedException e) {
-                    // TODO need to handle InterruptedException here correctly
-                    LOG.error("InterruptedException while taking task from queue", e);
+                    break;
                 }
             }
         }
