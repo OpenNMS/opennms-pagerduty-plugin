@@ -190,6 +190,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         }
         if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
             // This alarm wasn't sent to PD yet, and we've now cancelled that task
+            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
             return;
         }
 
