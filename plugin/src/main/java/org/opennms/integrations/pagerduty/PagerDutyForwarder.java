@@ -91,7 +91,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         this.serviceConfig = Objects.requireNonNull(serviceConfig);
         pdClient = pdClientFactory.getClient();
         taskQueue = new DelayQueue<>();
-        executor = Executors.newFixedThreadPool(1);
+        executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("PagerDuty-Forwarder-" + serviceConfig.getPid() + "-%d").build());
         executor.submit(new TaskConsumer()); // TODO may need a better way to handle the lifecycle of this thread?
 
         if (!Strings.isNullOrEmpty(serviceConfig.getJexlFilter())) {
