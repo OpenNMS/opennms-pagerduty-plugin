@@ -7,7 +7,6 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import org.opennms.pagerduty.client.api.PDEvent;
-import org.threeten.extra.Temporals;
 
 /**
  * Represents a PagerDuty notification to be sent at some future time, if the underlying alarm has not yet been
@@ -46,7 +45,7 @@ public class PagerDutyForwarderTask implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        return delay.get(Temporals.chronoUnit(unit));
+        return unit.convert(delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
