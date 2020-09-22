@@ -35,16 +35,12 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import org.opennms.pagerduty.client.api.PDEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents a PagerDuty notification to be sent at some future time, if the underlying alarm has not yet been
  * resolved.
  */
 public class PagerDutyForwarderTask implements Delayed {
-    private static final Logger LOG = LoggerFactory.getLogger(PagerDutyForwarderTask.class);
-
     /**
      * The time after which this task may fire.
      */
@@ -77,15 +73,8 @@ public class PagerDutyForwarderTask implements Delayed {
     @Override
     public long getDelay(TimeUnit unit) {
         Instant now = Instant.now();
-        if (now.isAfter(fireAfter)) {
-            LOG.debug("You may fire when ready!");
-            return 0;
-        }
         Duration remaining = Duration.between(now, fireAfter);
-        long d = unit.convert(remaining.toNanos(), TimeUnit.NANOSECONDS);
-        LOG.debug("getDelay(unit={}): {} => {}", unit, remaining, d);
-        LOG.debug("Trigger After: {}", fireAfter);
-        return d;
+        return unit.convert(remaining.toNanos(), TimeUnit.NANOSECONDS);
     }
 
     @Override
