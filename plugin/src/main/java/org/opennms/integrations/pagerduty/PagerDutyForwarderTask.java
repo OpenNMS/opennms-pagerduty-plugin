@@ -81,7 +81,7 @@ public class PagerDutyForwarderTask implements Delayed {
             LOG.debug("You may fire when ready!");
             return 0;
         }
-        Duration remaining = Duration.between(fireAfter, now);
+        Duration remaining = Duration.between(now, fireAfter);
         long d = unit.convert(remaining.toNanos(), TimeUnit.NANOSECONDS);
         LOG.debug("getDelay(unit={}): {} => {}", unit, remaining, d);
         LOG.debug("Trigger After: {}", fireAfter);
