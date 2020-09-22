@@ -84,7 +84,7 @@ This leverages the `=~` operator to mean "'Servers' is in the alarm's node's cat
 admin@opennms> property-set jexlFilter '"Servers" =~ alarm.node.categories and "Test" =~ alarm.node.categories and alarm.reductionKey !~ "^uei\.opennms\.org/generic/traps/SNMP_Authen_Failure:.*"'
 ```
 
-This leveages the `!~` operator to mean "the alarm reduction key does not match the given regex", in addition to the "in" sense of `=~` as shown above.
+This leverages the `!~` operator to mean "the alarm reduction key does not match the given regex", in addition to the "in" sense of `=~` as shown above.
 
 #### Only Alarms That Can Auto-Resolve
 
