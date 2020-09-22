@@ -127,10 +127,40 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
 
         PDEvent pdEvent = toEvent(alarm);
 
+        String reductionKey = alarm.getReductionKey();
+        switch (pdEvent.getEventAction()) {
+            case TRIGGER:
+                enqueueTask(pdEvent, reductionKey);
+                break;
+            case ACKNOWLEDGE:
+                ackEvent(pdEvent, reductionKey);
+                break;
+            case RESOLVE:
+                resolveEvent(pdEvent, reductionKey);
+                break;
+        }
+    }
+
+    private void enqueueTask(PDEvent pdEvent, String reductionKey) {
         Duration holdDownDelay = serviceConfig.getHoldDownDelay();
-        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", alarm.getReductionKey(), holdDownDelay);
-        PagerDutyForwarderTask task = new PagerDutyForwarderTask(holdDownDelay, alarm.getReductionKey(), pdEvent);
+        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", reductionKey, holdDownDelay);
+        PagerDutyForwarderTask task = new PagerDutyForwarderTask(holdDownDelay, reductionKey, pdEvent);
         taskQueue.offer(task);
+    }
+
+    private void resolveEvent(PDEvent pdEvent, String reductionKey) {
+        LOG.debug("Resolving alarm with reduction-key: {}", reductionKey);
+        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
+            // This alarm wasn't sent to PD yet, and we've now cancelled that task
+            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+            return;
+        }
+        sendPDEvent(reductionKey, pdEvent);
+    }
+
+    private void ackEvent(PDEvent pdEvent, String reductionKey) {
+        LOG.debug("Acknowledging alarm with reduction-key: {}", reductionKey);
+        sendPDEvent(reductionKey, pdEvent);
     }
 
     private void sendPDEvent(String reductionKey, PDEvent pdEvent) {
