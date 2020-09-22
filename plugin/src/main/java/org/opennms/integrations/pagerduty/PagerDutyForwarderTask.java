@@ -81,4 +81,29 @@ public class PagerDutyForwarderTask implements Delayed {
                 o.getDelay(TimeUnit.SECONDS),
                 Comparator.naturalOrder());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PagerDutyForwarderTask that = (PagerDutyForwarderTask) o;
+        return Objects.equals(delay, that.delay) &&
+                Objects.equals(reductionKey, that.reductionKey) &&
+                Objects.equals(pdEvent, that.pdEvent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(delay, reductionKey, pdEvent);
+    }
+
+    @Override
+    public String toString() {
+        return "PagerDutyForwarderTask{" +
+                "delay=" + delay +
+                ", reductionKey='" + reductionKey + '\'' +
+                ", pdEvent=" + pdEvent +
+                '}';
+    }
+
 }
