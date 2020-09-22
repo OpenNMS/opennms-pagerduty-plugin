@@ -11,4 +11,3 @@
       * API registration can be tested via a GET to /rest/pagerduty/ping
 * Improve support for handling situations
   * Should these be presented differently?
-* Hold-down timer support - i.e. don't forward to PD before X seconds have elapsed
