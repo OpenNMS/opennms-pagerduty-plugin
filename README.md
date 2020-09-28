@@ -84,7 +84,7 @@ This leverages the `=~` operator to mean "'Servers' is in the alarm's node's cat
 admin@opennms> property-set jexlFilter '"Servers" =~ alarm.node.categories and "Test" =~ alarm.node.categories and alarm.reductionKey !~ "^uei\.opennms\.org/generic/traps/SNMP_Authen_Failure:.*"'
 ```
 
-This leveages the `!~` operator to mean "the alarm reduction key does not match the given regex", in addition to the "in" sense of `=~` as shown above.
+This leverages the `!~` operator to mean "the alarm reduction key does not match the given regex", in addition to the "in" sense of `=~` as shown above.
 
 #### Only Alarms That Can Auto-Resolve
 
@@ -93,6 +93,38 @@ admin@opennms> property-set jexlFilter '"Servers" =~ alarm.node.categories and "
 ```
 
 This limits to only alarms for certain categories of nodes that have a resolution. Some alarms have no "clearing" event, so they would stay present in PagerDuty forever unless manual action is taken, or certain special configuration is used within PagerDuty to expire the events.
+
+### Hold-Down Timer (Delayed Notifications)
+
+Some alarms may quick resolve themselves, especially occasional brief outages from the OpenNMS service pollers.
+
+To be able to get the full benefits of the OpenNMS [Downtime Model](https://docs.opennms.org/opennms/releases/latest/guide-admin/guide-admin.html#ga-service-assurance-downtime-model),
+you can specify a hold-down timer of at least a few minutes, to trade off instant notification of issues for
+reduced false positives (issues that resolved themselves before you were able to look at them).
+
+Similar to configuring the `jexlFilter` above, you can edit a specific service's configuration. To find
+the specific configuration to edit, use `config:list` as shown below, then use `config:edit` to edit the Pid of that specific
+service's configuration:
+
+```
+admin@opennms> config:list '(service.factoryPid=org.opennms.plugins.pagerduty.services)'
+----------------------------------------------------------------
+Pid:            org.opennms.plugins.pagerduty.services.bbc99bb4-bc56-4d56-b35c-14066b6e2dcf
+FactoryPid:     org.opennms.plugins.pagerduty.services
+BundleLocation: ?
+Properties:
+   felix.fileinstall.filename = file:/opt/opennms/etc/org.opennms.plugins.pagerduty.services-test-servers.cfg
+   jexlFilter = "Servers" =~ alarm.node.categories and "Test" =~ alarm.node.categories and alarm.type.name == "PROBLEM"
+   routingKey = YOUR-INTEGRATION-KEY-HERE
+   service.factoryPid = org.opennms.plugins.pagerduty.services
+   service.pid = org.opennms.plugins.pagerduty.services.bbc99bb4-bc56-4d56-b35c-14066b6e2dcf
+admin@opennms> config:edit org.opennms.plugins.pagerduty.services.bbc99bb4-bc56-4d56-b35c-14066b6e2dcf
+admin@opennms> property-set holdDownDelay "PT5M"
+admin@opennms> config:update
+```
+
+The `holdDownDelay` property should be a string that follows ISO-8601 duration format, as supported
+by [`java.time.Duration.parse()`](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-).
 
 ### Handling notification failures
 

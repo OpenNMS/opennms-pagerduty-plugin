@@ -30,13 +30,17 @@ package org.opennms.integrations.pagerduty;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
@@ -48,7 +52,6 @@ import org.opennms.integration.api.v1.events.EventForwarder;
 import org.opennms.integration.api.v1.model.Alarm;
 import org.opennms.integration.api.v1.model.DatabaseEvent;
 import org.opennms.integration.api.v1.model.EventParameter;
-import org.opennms.integration.api.v1.model.InMemoryEvent;
 import org.opennms.integration.api.v1.model.Severity;
 import org.opennms.integration.api.v1.model.immutables.ImmutableEventParameter;
 import org.opennms.integration.api.v1.model.immutables.ImmutableInMemoryEvent;
@@ -62,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(PagerDutyForwarder.class);
@@ -75,6 +79,8 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private final PagerDutyPluginConfig pluginConfig;
     private final PagerDutyServiceConfig serviceConfig;
     private final JexlExpression jexlFilterExpression;
+    private final DelayQueue<PagerDutyForwarderTask> taskQueue;
+    private final ExecutorService executor;
 
     /**
      * Used to track alarms that were filtered and not forwarded to PD.
@@ -86,6 +92,9 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         this.pluginConfig = Objects.requireNonNull(pluginConfig);
         this.serviceConfig = Objects.requireNonNull(serviceConfig);
         pdClient = pdClientFactory.getClient();
+        taskQueue = new DelayQueue<>();
+        executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("PagerDuty-Forwarder-" + serviceConfig.getPid() + "-%d").build());
+        executor.submit(new TaskConsumer());
 
         if (!Strings.isNullOrEmpty(serviceConfig.getJexlFilter())) {
             JexlEngine jexl = new JexlBuilder().create();
@@ -118,10 +127,58 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         alarmIdsFiltered.remove(alarm.getId());
 
         PDEvent pdEvent = toEvent(alarm);
-        LOG.info("Sending event for alarm with reduction-key: {}", alarm.getReductionKey());
-        pdClient.sendEvent(pdEvent).whenComplete((v,ex) -> {
+
+        String reductionKey = alarm.getReductionKey();
+        switch (pdEvent.getEventAction()) {
+            case TRIGGER:
+                enqueueTask(pdEvent, reductionKey);
+                break;
+            case ACKNOWLEDGE:
+                ackEvent(pdEvent, reductionKey);
+                break;
+            case RESOLVE:
+                resolveEvent(pdEvent, reductionKey);
+                break;
+        }
+    }
+
+    private void enqueueTask(PDEvent pdEvent, String reductionKey) {
+        Duration holdDownDelay = serviceConfig.getHoldDownDelay();
+        LOG.debug("Scheduling task to send event for alarm with reduction-key: {}, delay: {}", reductionKey, holdDownDelay);
+        PagerDutyForwarderTask task = new PagerDutyForwarderTask(Instant.now().plus(holdDownDelay), reductionKey, pdEvent);
+        taskQueue.offer(task);
+    }
+
+    private void resolveEvent(PDEvent pdEvent, String reductionKey) {
+        LOG.debug("Resolving alarm with reduction-key: {}", reductionKey);
+        if (dequeueTasks(reductionKey)) {
+            return;
+        }
+        sendPDEvent(reductionKey, pdEvent);
+    }
+
+    private void ackEvent(PDEvent pdEvent, String reductionKey) {
+        LOG.debug("Acknowledging alarm with reduction-key: {}", reductionKey);
+        if (dequeueTasks(reductionKey)) {
+            return;
+        }
+        sendPDEvent(reductionKey, pdEvent);
+    }
+
+    private boolean dequeueTasks(String reductionKey) {
+        if (taskQueue.removeIf(t -> t.getReductionKey().equals(reductionKey))) {
+            // This alarm wasn't sent to PD yet, and we've now cancelled that task
+            LOG.debug("Task removed from queue for reduction-key: {}", reductionKey);
+            return true;
+        }
+        return false;
+    }
+
+    private void sendPDEvent(String reductionKey, PDEvent pdEvent) {
+        LOG.info("Sending event for alarm with reduction-key: {}", reductionKey);
+        pdClient.sendEvent(pdEvent).whenComplete((v, ex) -> {
            if (ex != null) {
-               LOG.warn("Sending event for alarm with reduction-key: {} failed.", alarm.getReductionKey(), ex);
+               LOG.warn("Sending event for alarm with reduction-key: {} failed.", reductionKey, ex);
                eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
                        .setUei(SEND_EVENT_FAILED_UEI)
                        .setSource(PagerDutyForwarder.class.getName())
@@ -129,7 +186,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                        // .addParameter("reductionKey", alarm.getReductionKey())
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("reductionKey")
-                               .setValue(alarm.getReductionKey())
+                               .setValue(reductionKey)
                                .build())
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("message")
@@ -145,13 +202,13 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
                                .build())
                        .build());
            } else {
-               LOG.info("Event sent successfully for alarm with reduction-key: {}", alarm.getReductionKey());
+               LOG.info("Event sent successfully for alarm with reduction-key: {}", reductionKey);
                eventForwarder.sendAsync(ImmutableInMemoryEvent.newBuilder()
                        .setUei(SEND_EVENT_SUCCESSFUL_UEI)
                        .setSource(PagerDutyForwarder.class.getName())
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("reductionKey")
-                               .setValue(alarm.getReductionKey())
+                               .setValue(reductionKey)
                                .build())
                        .addParameter(ImmutableEventParameter.newBuilder()
                                .setName("routingKey")
@@ -172,6 +229,10 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             // This alarm was filtered out and not forwarded to PD, do not forward the delete
             return;
         }
+        if (dequeueTasks(reductionKey)) {
+            return;
+        }
+
         final PDEvent e = new PDEvent();
         e.setEventAction(PDEventAction.RESOLVE);
         e.setDedupKey(reductionKey);
@@ -247,6 +308,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         } catch (IOException e) {
             LOG.warn("Error while closing PagerDuty client. Resources may not be cleaned up properly.", e);
         }
+        executor.shutdownNow();
     }
 
     public static boolean testAlarmAgainstExpression(JexlExpression expression, Alarm alarm) {
@@ -254,4 +316,24 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         jc.set("alarm", alarm);
         return (boolean)expression.evaluate(jc);
     }
+
+    private class TaskConsumer implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    LOG.debug("Waiting for a task to become available...");
+                    PagerDutyForwarderTask task = taskQueue.take();
+                    LOG.debug("Received PagerDutyForwarderTask: {}", task);
+                    sendPDEvent(task.getReductionKey(), task.getPdEvent());
+                } catch (InterruptedException e) {
+                    LOG.info("TaskConsumer interrupted. Stopping.");
+                    break;
+                }
+            }
+        }
+
+    }
+
 }

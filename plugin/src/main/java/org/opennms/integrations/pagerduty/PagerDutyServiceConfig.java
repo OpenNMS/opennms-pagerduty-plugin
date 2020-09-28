@@ -28,17 +28,20 @@
 
 package org.opennms.integrations.pagerduty;
 
+import java.time.Duration;
 import java.util.Objects;
 
 public class PagerDutyServiceConfig {
     private final String pid;
     private final String routingKey;
     private final String jexlFilter;
+    private final Duration holdDownDelay;
 
-    public PagerDutyServiceConfig(String pid, String routingKey, String jexlFilter) {
+    public PagerDutyServiceConfig(String pid, String routingKey, String jexlFilter, Duration holdDownDelay) {
         this.pid = Objects.requireNonNull(pid, "pid is required");
         this.routingKey = Objects.requireNonNull(routingKey, "routingKey is required");
         this.jexlFilter = jexlFilter;
+        this.holdDownDelay = holdDownDelay == null ? Duration.ZERO : holdDownDelay;
     }
 
     public String getPid() {
@@ -53,6 +56,10 @@ public class PagerDutyServiceConfig {
         return jexlFilter;
     }
 
+    public Duration getHoldDownDelay() {
+        return holdDownDelay;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -60,12 +67,13 @@ public class PagerDutyServiceConfig {
         PagerDutyServiceConfig that = (PagerDutyServiceConfig) o;
         return Objects.equals(pid, that.pid) &&
                 Objects.equals(routingKey, that.routingKey) &&
-                Objects.equals(jexlFilter, that.jexlFilter);
+                Objects.equals(jexlFilter, that.jexlFilter) &&
+                Objects.equals(holdDownDelay, that.holdDownDelay);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pid, routingKey, jexlFilter);
+        return Objects.hash(pid, routingKey, jexlFilter, holdDownDelay);
     }
 
     @Override
@@ -74,6 +82,7 @@ public class PagerDutyServiceConfig {
                 "pid='" + pid + '\'' +
                 ", routingKey='" + routingKey + '\'' +
                 ", jexlFilter='" + jexlFilter + '\'' +
+                ", holdDownDelay='" + holdDownDelay + '\'' +
                 '}';
     }
 }
