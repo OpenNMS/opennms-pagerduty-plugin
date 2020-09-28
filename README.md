@@ -19,7 +19,7 @@ This plugin is compatible with OpenNMS Horizon 26.1.3 or higher.
 
 Download the plugin's .kar file into your OpenNMS deploy directory i.e.:
 ```
-sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.2/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
+sudo wget https://github.com/OpenNMS/opennms-pagerduty-plugin/releases/download/v0.1.3/opennms-pagerduty-plugin.kar -P /opt/opennms/deploy/
 ```
 
 Configure the plugin to be installed when OpenNMS starts:
