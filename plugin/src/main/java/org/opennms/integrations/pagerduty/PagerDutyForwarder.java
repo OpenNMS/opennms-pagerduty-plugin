@@ -48,6 +48,7 @@ import org.apache.commons.jexl3.JexlEngine;
 import org.apache.commons.jexl3.JexlExpression;
 import org.apache.commons.jexl3.MapContext;
 import org.opennms.integration.api.v1.alarms.AlarmLifecycleListener;
+import org.opennms.integration.api.v1.config.events.AlarmType;
 import org.opennms.integration.api.v1.events.EventForwarder;
 import org.opennms.integration.api.v1.model.Alarm;
 import org.opennms.integration.api.v1.model.DatabaseEvent;
@@ -259,7 +260,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         e.setRoutingKey(serviceConfig.getRoutingKey());
         e.setDedupKey(alarm.getReductionKey());
 
-        if (Severity.CLEARED.equals(alarm.getSeverity())) {
+        if (Severity.CLEARED.equals(alarm.getSeverity()) || AlarmType.RESOLUTION.equals(alarm.getType())) {
             e.setEventAction(PDEventAction.RESOLVE);
         } else if (alarm.isAcknowledged()) {
             e.setEventAction(PDEventAction.ACKNOWLEDGE);
