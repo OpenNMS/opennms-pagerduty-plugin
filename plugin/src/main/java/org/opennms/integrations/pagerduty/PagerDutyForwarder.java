@@ -271,7 +271,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         final PDEventPayload payload = new PDEventPayload();
         e.setPayload(payload);
         // Log message -> Summary
-        payload.setSummary(alarm.getLogMessage());
+        payload.setSummary(alarm.getLogMessage().trim());
         // Severity -> Severity
         payload.setSeverity(PDEventSeverity.fromOnmsSeverity(alarm.getSeverity()));
         // Use the node label as the source if available
