@@ -65,6 +65,10 @@ import org.opennms.pagerduty.client.api.PDEventSeverity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -82,6 +86,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private final JexlExpression jexlFilterExpression;
     private final DelayQueue<PagerDutyForwarderTask> taskQueue;
     private final ExecutorService executor;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * Used to track alarms that were filtered and not forwarded to PD.
@@ -284,6 +289,11 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             // Use the MO type/instance if set
             payload.setComponent(String.format("%s - %s", alarm.getManagedObjectType(), alarm.getManagedObjectInstance()));
         }
+
+        // Add the alarm as custom details
+        JsonNode alarmJson = mapper.convertValue(alarm, JsonNode.class);
+        payload.getCustomDetails().put("alarm", alarmJson);
+
         // Add all of the event parameters as custom details
         final DatabaseEvent dbEvent = alarm.getLastEvent();
         if (dbEvent != null) {
