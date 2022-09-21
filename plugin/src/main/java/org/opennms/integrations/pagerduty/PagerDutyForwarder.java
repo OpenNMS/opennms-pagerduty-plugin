@@ -290,15 +290,15 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             payload.setComponent(String.format("%s - %s", alarm.getManagedObjectType(), alarm.getManagedObjectInstance()));
         }
 
-        // Add the alarm as custom details
-        JsonNode alarmJson = mapper.convertValue(alarm, JsonNode.class);
-        payload.getCustomDetails().put("alarm", alarmJson);
-
         // Add all of the event parameters as custom details
         final DatabaseEvent dbEvent = alarm.getLastEvent();
         if (dbEvent != null) {
             payload.getCustomDetails().putAll(eparmsToMap(dbEvent.getParameters()));
         }
+
+        // If the event parameters contains a field called 'alarm', then the alarm itself overwrites that (by design).
+        JsonNode alarmJson = mapper.convertValue(alarm, JsonNode.class);
+        payload.getCustomDetails().put("alarm", alarmJson);
 
         return e;
     }
