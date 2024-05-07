@@ -1,0 +1,29 @@
+---
+name: onms-plugin-pagerduty-build
+run-name: Build and run test suites for the OpenNMS PagerDuty plugin
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Cleaning project for quick validation
+        run: |
+          mvn verify
+      - name: Compile source without tests
+        run: |
+          mvn -DskipITs=true -DskipTests=true clean install
+      - name: Run tests
+        run: |
+          mvn -DskipITs=false -DskipTests=false clean install test integration-test
+      - name: Persist Karaf archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: kar-file
+          path: assembly/kar/target/opennms-pagerduty-plugin.kar
