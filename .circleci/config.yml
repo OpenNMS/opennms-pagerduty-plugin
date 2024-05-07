@@ -3,7 +3,7 @@ version: 2.1
 executors:
   build-executor:
     docker:
-      - image: cimg/openjdk:11.0.16
+      - image: cimg/openjdk:17.0.14
         environment:
           MAVEN_OPTS: -Xmx1g
 
