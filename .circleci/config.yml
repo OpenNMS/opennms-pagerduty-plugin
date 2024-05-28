@@ -34,3 +34,5 @@ jobs:
           when: always
       - store_test_results:
           path: ~/junit
+      - store_artifacts:
+          path: assembly/kar/target/opennms-pagerduty-plugin.kar
