@@ -43,6 +43,7 @@ import java.util.Map;
 public class PDEventPayload {
 
     protected static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'.'SS+0000";
+    private static final int SUMMARY_MAX_LENGTH = 1024;
 
     /**
      * A brief text summary of the event, used to generate the summaries/titles of any associated alerts.
@@ -99,7 +100,7 @@ public class PDEventPayload {
     }
 
     public void setSummary(String summary) {
-        this.summary = summary;
+        this.summary = summary.substring(0, Math.min(summary.length(), SUMMARY_MAX_LENGTH));
     }
 
     public String getSource() {
