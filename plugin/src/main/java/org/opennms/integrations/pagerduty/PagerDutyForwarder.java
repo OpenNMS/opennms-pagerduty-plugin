@@ -74,6 +74,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private static final String PD_UEI_PREFIX = "uei.opennms.org/pagerduty";
     private static final String SEND_EVENT_FAILED_UEI = PD_UEI_PREFIX + "/sendEventFailed";
     private static final String SEND_EVENT_SUCCESSFUL_UEI = PD_UEI_PREFIX + "/sendEventSuccessful";
+    private static final int SUMMARY_MAX_LENGTH = 1024;
 
     private EventForwarder eventForwarder;
     private final PDClient pdClient;
@@ -271,7 +272,11 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         final PDEventPayload payload = new PDEventPayload();
         e.setPayload(payload);
         // Log message -> Summary
-        payload.setSummary(alarm.getLogMessage().trim());
+        // Maximum of 1024 characters in summary field
+        if (alarm.getLogMessage().length() >= SUMMARY_MAX_LENGTH) {
+            LOG.info("Alarm with key '{}' contains 'logmessage' longer than '{}' characters, truncating payload summary.", alarm.getReductionKey(), SUMMARY_MAX_LENGTH);
+        }
+        payload.setSummary(alarm.getLogMessage().trim(), SUMMARY_MAX_LENGTH);
         // Severity -> Severity
         payload.setSeverity(PDEventSeverity.fromOnmsSeverity(alarm.getSeverity()));
         // Use the node label as the source if available

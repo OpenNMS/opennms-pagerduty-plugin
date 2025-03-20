@@ -98,8 +98,8 @@ public class PDEventPayload {
         return summary;
     }
 
-    public void setSummary(String summary) {
-        this.summary = summary;
+    public void setSummary(String summary, int maxLength) {
+        this.summary = summary.substring(0, Math.min(summary.length(), maxLength));
     }
 
     public String getSource() {
