@@ -52,7 +52,7 @@ public class PDEventTest {
         PDEvent event = new PDEvent();
 
         PDEventPayload payload = new PDEventPayload();
-        payload.setSummary("Example alert on host1.example.com");
+        payload.setSummary("Example alert on host1.example.com", 1024);
         SimpleDateFormat formatter = new SimpleDateFormat(PDEventPayload.DATE_FORMAT, Locale.US);
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date date = formatter.parse("2015-07-17T08:42:58.315+0000");
