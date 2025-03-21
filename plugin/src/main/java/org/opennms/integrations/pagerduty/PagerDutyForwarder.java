@@ -42,6 +42,9 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
 import org.apache.commons.jexl3.JexlEngine;
@@ -75,6 +78,7 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
     private static final String SEND_EVENT_FAILED_UEI = PD_UEI_PREFIX + "/sendEventFailed";
     private static final String SEND_EVENT_SUCCESSFUL_UEI = PD_UEI_PREFIX + "/sendEventSuccessful";
     private static final int SUMMARY_MAX_LENGTH = 1024;
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private EventForwarder eventForwarder;
     private final PDClient pdClient;
@@ -261,16 +265,19 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         e.setRoutingKey(serviceConfig.getRoutingKey());
         e.setDedupKey(alarm.getReductionKey());
 
-        if (Severity.CLEARED.equals(alarm.getSeverity()) || AlarmType.RESOLUTION.equals(alarm.getType())) {
-            e.setEventAction(PDEventAction.RESOLVE);
-        } else if (alarm.isAcknowledged()) {
-            e.setEventAction(PDEventAction.ACKNOWLEDGE);
-        } else {
-            e.setEventAction(PDEventAction.TRIGGER);
-        }
+        return createPayload(alarm, e);
+    }
 
+    public static PDEvent createPayload(Alarm alarm, PDEvent pdEvent) {
+        if (Severity.CLEARED.equals(alarm.getSeverity()) || AlarmType.RESOLUTION.equals(alarm.getType())) {
+            pdEvent.setEventAction(PDEventAction.RESOLVE);
+        } else if (alarm.isAcknowledged()) {
+            pdEvent.setEventAction(PDEventAction.ACKNOWLEDGE);
+        } else {
+            pdEvent.setEventAction(PDEventAction.TRIGGER);
+        }
         final PDEventPayload payload = new PDEventPayload();
-        e.setPayload(payload);
+        pdEvent.setPayload(payload);
         // Log message -> Summary
         // Maximum of 1024 characters in summary field
         if (alarm.getLogMessage().length() >= SUMMARY_MAX_LENGTH) {
@@ -294,8 +301,23 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
         if (dbEvent != null) {
             payload.getCustomDetails().putAll(eparmsToMap(dbEvent.getParameters()));
         }
-
-        return e;
+        // Add the event's nodelabel to details
+        if (alarm.getNode().getLabel() != null && !payload.getCustomDetails().containsKey("nodeLabel")) {
+            payload.getCustomDetails().put("nodeLabel", alarm.getNode().getLabel());
+        }
+        // Add categories
+        if (alarm.getNode().getCategories() != null && !payload.getCustomDetails().containsKey("node_categories")) {
+            payload.getCustomDetails().put("node_categories", alarm.getNode().getCategories().toString());
+        }
+        //Add the first IP address
+        if (alarm.getNode().getIpInterfaces().get(0).getIpAddress() != null && !payload.getCustomDetails().containsKey("node_ipAddress")) {
+            payload.getCustomDetails().put("node_ipAddress", alarm.getNode().getIpInterfaces().get(0).getIpAddress().toString());
+        }
+        //Add the entire alarm in its own field, overwriting the existing field if one exists
+        mapper.registerModule(new Jdk8Module());
+        JsonNode alarmJson = mapper.convertValue(alarm, JsonNode.class);
+        payload.getCustomDetails().put("alarm_data", alarmJson);
+        return pdEvent;
     }
 
     protected static Map<String, Object> eparmsToMap(List<EventParameter> eparms) {
