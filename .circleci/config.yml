@@ -15,7 +15,7 @@ workflows:
           context: 
             - github-releases
           requires:
-            - tests
+            - build
           filters:
             tags:
               only:
