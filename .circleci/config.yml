@@ -11,7 +11,17 @@ workflows:
   build-deploy:
     jobs:
       - build
-
+      - publish-github-release:
+          context: 
+            - github-releases
+          requires:
+            - tests
+          filters:
+            tags:
+              only:
+                - /^v.*/
+            branches:
+              ignore: /.*/     
 jobs:
   build:
     executor: build-executor
@@ -36,3 +46,36 @@ jobs:
           path: ~/junit
       - store_artifacts:
           path: assembly/kar/target/opennms-pagerduty-plugin.kar
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project
+            - output
+
+  publish-github-release:
+    executor: build-executor
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install GitHub CLI and Publish release on GitHub
+          command: |
+            if [ -z "${CIRCLE_TAG}" ]; then 
+              echo "Skipping step as we don't have a tag!"
+            else 
+              tag=${CIRCLE_TAG}
+
+              # Install GitHub CLI
+              type -p curl >/dev/null || sudo apt install curl -y
+              curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+              && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+              && sudo apt update \
+              && sudo apt install gh -y
+              
+              gh release create $tag --title "$tag Release" --notes "$tag prerelease!" --prerelease --generate-notes 
+
+              gh release upload $tag assembly/kar/target/opennms-pagerduty-plugin.kar
+            fi
+
