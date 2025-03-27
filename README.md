@@ -48,7 +48,7 @@ property-set routingKey "YOUR-INTEGRATION-KEY-HERE"
 config:update
 ```
 
-> Use the value of the "Integration Key" as the `routingKey` in the service integrations. By default, you will receive notifications for all alarms. Use a JEXL expression to filter the types of notifcations you receive. For example,`property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'` will forward only alarms with the label "trigger" to PagerDuty.    
+> Use the value of the "Integration Key" as the `routingKey` in the service integrations. Use a JEXL expression to filter the types of notifcations you receive. For example,`property-set jexlFilter 'alarm.reductionKey =~ ".*trigger.*"'` will forward only alarms with the label "trigger" to PagerDuty. No alarms will forward to PagerDuty until a JEXL expression is configured.   
 
 The plugin supports handling multiple services simultaneously - use a different `alias` for each of these when configuring.
 
