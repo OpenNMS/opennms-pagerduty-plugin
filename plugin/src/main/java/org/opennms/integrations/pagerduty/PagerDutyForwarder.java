@@ -116,7 +116,8 @@ public class PagerDutyForwarder implements AlarmLifecycleListener, Closeable {
             return false;
         }
         if (jexlFilterExpression == null) {
-            return true;
+            LOG.info("No JEXL expression found, not evaluating alarm.");
+            return false;
         }
         return testAlarmAgainstExpression(jexlFilterExpression, alarm);
     }
