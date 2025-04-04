@@ -1,6 +1,5 @@
 version: 2.1
 
-
 executors:
   build-executor:
     docker:
@@ -19,13 +18,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Compile source without tests
+          name: Compile source with tests
           command: |
-            mvn -DskipITs=true -DskipTests=true clean install
-      - run:
-          name: Run tests
-          command: |
-            mvn -DskipITs=false -DskipTests=false clean install test integration-test
+            make
       - run:
           name: Save test results
           command: |
@@ -33,7 +28,19 @@ jobs:
             find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/junit/ \;
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/junit/ \;
           when: always
+      - run:
+          name: Collect artifacts
+          command: |
+            mkdir -p ~/artifacts/
+            find . -type f -regex ".*\/assembly\/kar\/target\/opennms-pagerduty-plugin-.*\.kar" -exec cp {} ~/artifacts/ \;
+      - run:
+          name: Create archive with checksums
+          command: |
+            cd ~/artifacts
+            shasum -a 256 -b opennms-pagerduty-plugin-*.kar > shasum256.txt
+            tar czf opennms-pagerduty-plugin.tar.gz opennms-pagerduty-plugin-*.kar shasum256.txt
+            shasum -a 256 -b opennms-pagerduty-plugin.tar.gz > opennms-pagerduty-plugin.sha256
       - store_test_results:
           path: ~/junit
       - store_artifacts:
-          path: assembly/kar/target/opennms-pagerduty-plugin.kar
+          path: ~/artifacts
