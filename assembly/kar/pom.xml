@@ -24,7 +24,7 @@
                         </goals>
                         <configuration>
                             <featuresFile>mvn:org.opennms.plugins/pagerduty-karaf-features/${project.version}/xml</featuresFile>
-                            <finalName>opennms-pagerduty-plugin</finalName>
+                            <finalName>opennms-pagerduty-plugin-${project.version}</finalName>
                             <ignoreDependencyFlag>true</ignoreDependencyFlag>
                             <archive>
                               <manifestEntries>
