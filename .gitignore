@@ -26,7 +26,6 @@ dependency-reduced-pom.xml
 .settings
 .classpath
 .project
-.java-version
 java/bin/
 *.swp
 *.iml
