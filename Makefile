@@ -7,7 +7,7 @@ GIT_SHORT_HASH      := $(shell git rev-parse --short HEAD)
 DATE                := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ") # Date format RFC3339
 JAVA_MAJOR_VERSION  := 17
 
-ARTIFACTS_DIR       := ./target
+ARTIFACTS_DIR       := ./target/artifacts
 RELEASE_VERSION     := UNSET.0.0
 RELEASE_BRANCH      := master
 MAJOR_VERSION       := $(shell echo $(RELEASE_VERSION) | cut -d. -f1)
@@ -56,6 +56,14 @@ pagerduty-plugin: deps-build
 .PHONY clean:
 clean: deps-build
 	mvn clean
+
+.PHONY collect-artifacts:
+collect-artifacts:
+	find . -type f -regex ".*\/assembly\/kar\/target\/opennms-pagerduty-plugin-.*\.kar" -exec cp {} $(ARTIFACTS_DIR) \;
+	echo $(VERSION) > $(ARTIFACTS_DIR)/pom-version.txt
+	shasum -a 256 -b $(ARTIFACTS_DIR)/opennms-pagerduty-plugin-*.kar > $(ARTIFACTS_DIR)/shasum256.txt
+	cd $(ARTIFACTS_DIR); tar czf opennms-pagerduty-plugin.tar.gz opennms-pagerduty-plugin-*.kar shasum256.txt
+	shasum -a 256 -b $(ARTIFACTS_DIR)/opennms-pagerduty-plugin.tar.gz > $(ARTIFACTS_DIR)/opennms-pagerduty-plugin.sha256
 
 .PHONY: release
 release: deps-build

@@ -1,3 +1,4 @@
+---
 version: 2.1
 
 executors:
@@ -6,11 +7,25 @@ executors:
       - image: cimg/openjdk:17.0.14
         environment:
           MAVEN_OPTS: -Xmx1g
+  go-executor:
+    docker:
+      - image: cimg/go:1.23
 
 workflows:
   build-deploy:
     jobs:
       - build
+      - publish-github-release:
+          context:
+            - github-releases
+          requires:
+            - build
+          filters:
+            tags:
+              only:
+                - /^v.*/
+            branches:
+              ignore: /.*/
 
 jobs:
   build:
@@ -19,8 +34,7 @@ jobs:
       - checkout
       - run:
           name: Compile source with tests
-          command: |
-            make
+          command: make
       - run:
           name: Save test results
           command: |
@@ -30,17 +44,30 @@ jobs:
           when: always
       - run:
           name: Collect artifacts
-          command: |
-            mkdir -p ~/artifacts/
-            find . -type f -regex ".*\/assembly\/kar\/target\/opennms-pagerduty-plugin-.*\.kar" -exec cp {} ~/artifacts/ \;
-      - run:
-          name: Create archive with checksums
-          command: |
-            cd ~/artifacts
-            shasum -a 256 -b opennms-pagerduty-plugin-*.kar > shasum256.txt
-            tar czf opennms-pagerduty-plugin.tar.gz opennms-pagerduty-plugin-*.kar shasum256.txt
-            shasum -a 256 -b opennms-pagerduty-plugin.tar.gz > opennms-pagerduty-plugin.sha256
+          command: make collect-artifacts
       - store_test_results:
           path: ~/junit
       - store_artifacts:
-          path: ~/artifacts
+          path: target/artifacts
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project
+
+  publish-github-release:
+    executor: go-executor
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install ghr tool to create GitHub releases and upload artifacts
+          command: go install github.com/tcnksm/ghr@latest
+      - run:
+          name: Publish artifacts as GitHub release
+          command: |
+            export GITHUB_TOKEN="${GH_TOKEN}"
+            mkdir github-release
+            cp target/artifacts/opennms-pagerduty-plugin.sha256 github-release
+            cp target/artifacts/opennms-pagerduty-plugin.tar.gz github-release
+            ghr -r ${CIRCLE_PROJECT_REPONAME} $(cat target/artifacts/pom-version.txt) github-release
