@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opennms.pagerduty.client.api.PDEvent;
 
-@Command(scope = "opennms-pagerduty", name = "eval-jexl", description = "Evaluate a JEXL expression")
+@Command(scope = "opennms-pagerduty", name = "eval-jexl", description = "Evaluate a JEXL expression for the PagerDuty plugin")
 @Service
 public class JEXLEval implements Action {
 
@@ -57,17 +57,21 @@ public class JEXLEval implements Action {
     @Argument(required = true)
     private String expression;
 
-    @Option(name = "-p", aliases = "--topayload", description = "Also convert matched alarms to JSON PagerDuty event payloads", required = false, multiValued = false)
+    @Option(name = "-p", aliases = "--topayload", description = "Convert matching alarms to JSON PagerDuty event payloads", required = false, multiValued = false)
     Boolean toPayload = false;
 
     @Option(name = "-c", aliases = "--count", description = "Only show the number of matching alarms, without alarm data", required = false, multiValued = false)
     Boolean onlyCount = false;
+
+    @Option(name = "-a", aliases = "--alarm-id", description = "Lookup an alarm by its id and evaluate the given expression against it.")
+    private Integer alarmId;
 
     @Override
     public Object execute() throws JsonProcessingException {
         JexlEngine jexl = new JexlBuilder().create();
         JexlExpression e = jexl.createExpression(expression);
 
+        boolean alarmIdMatched = false;
         int numAlarmsProcessed = 0;
         boolean didMatchAtLeastOneAlarm = false;
         int matchedAlarmCount = 0;
@@ -79,16 +83,23 @@ public class JEXLEval implements Action {
         for (Alarm alarm : alarmDao.getAlarms()) {
             numAlarmsProcessed++;
             boolean didMatch = PagerDutyForwarder.testAlarmAgainstExpression(e, alarm);
+
+            if (alarmId != null && alarm.getId().equals(alarmId)) {
+                System.out.printf("Alarm with ID '%d' has reduction key: '%s'\n", alarmId, alarm.getReductionKey());
+                alarmIdMatched = true;
+                System.out.printf("Expression evaluates: %s\n", didMatch);
+            }
             if (didMatch) {
-                if (!onlyCount) {
+                if (!onlyCount && alarmId == null) {
                     System.out.println("MATCHED: " + alarm);
-                    if (toPayload) {
-                        ObjectMapper mapper = new ObjectMapper();
-                        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-                        PDEvent pdevent = new PDEvent();
-                        Object json = mapper.convertValue(PagerDutyForwarder.createPayload(alarm, pdevent), JsonNode.class);
-                        System.out.println("PagerDuty JSON Payload:\n " + mapper.writeValueAsString(json));
-                    }
+                }
+                if (toPayload && !onlyCount && (alarmId == null || alarm.getId().equals(alarmId))) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+                    PDEvent pdevent = new PDEvent();
+                    Object json = mapper.convertValue(PagerDutyForwarder.createPayload(alarm, pdevent), JsonNode.class);
+                    System.out.println("PagerDuty JSON Payload:\n " + mapper.writeValueAsString(json));
+                    System.out.println();
                 }
                 matchedAlarmCount++;
                 didMatchAtLeastOneAlarm = true;
@@ -96,11 +107,13 @@ public class JEXLEval implements Action {
         }
 
         if (numAlarmsProcessed < 1) {
-            System.out.println("No alarms present.");
+            System.out.println("\nNo alarms present.\n");
         } else if (!didMatchAtLeastOneAlarm) {
-            System.out.printf("No alarms matched (out of %d alarms.)\n", numAlarmsProcessed);
+            System.out.printf("\nNo alarms matched (out of %d alarms.)\n", numAlarmsProcessed);
+        } else if (alarmId != null && !alarmIdMatched) {
+            System.out.printf("\nNo alarm with ID '%d' was found!\n", alarmId);
         } else if (didMatchAtLeastOneAlarm && matchedAlarmCount > 0) {
-            System.out.printf("Matched %d alarms (out of %d alarms.)\n", matchedAlarmCount, numAlarmsProcessed);
+            System.out.printf("\nExpression matched %d alarms (out of %d alarms.)\n", matchedAlarmCount, numAlarmsProcessed);
         }
         return null;
     }
