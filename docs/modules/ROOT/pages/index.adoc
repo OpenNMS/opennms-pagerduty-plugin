@@ -1,0 +1,11 @@
+= User's Guide to the OpenNMS PagerDuty Plugin
+:imagesdir: ../assets/images
+:!sectids:
+
+:description: Learn about the OpenNMS PagerDuty plugin, which forwards alarms to PagerDuty to create incidents.
+
+[options="autowidth"]
+|===
+|Version:     |{full-display-version}
+|Last update: |{docdatetime}
+|===

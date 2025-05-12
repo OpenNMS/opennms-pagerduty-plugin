@@ -127,4 +127,4 @@ deps-docs:
 
 docs: deps-docs
 	@echo "Build Antora docs..."
-	antora --stacktrace antora.yml
+	antora --stacktrace local-site.yml
