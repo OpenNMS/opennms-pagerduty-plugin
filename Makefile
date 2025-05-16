@@ -121,3 +121,10 @@ release: deps-build
 	@echo ""
 	@echo "Thank you for computing with us."
 	@echo ""
+
+deps-docs:
+	@command -v antora
+
+docs: deps-docs
+	@echo "Build Antora docs..."
+	antora --stacktrace local-site.yml

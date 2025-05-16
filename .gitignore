@@ -30,3 +30,6 @@ java/bin/
 *.swp
 *.iml
 
+# Antora artifacts
+/build/
+/public/
